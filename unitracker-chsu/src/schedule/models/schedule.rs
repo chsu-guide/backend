@@ -1,22 +1,26 @@
-pub struct Root {
-    /// Vector of [`Week`] structs
-    weeks: Vec<Week>
-}
+use serde_derive::Deserialize;
 
+#[derive(Default, Debug, Deserialize)]
+pub struct Schedule {
+    weeks: Vec<Week>,
+}
+#[derive(Default, Debug, Deserialize)]
 pub struct Week {
     /// Index of the week starting at September 1st
     week: i16,
     /// Vector of [`Date`] structs
-    dates: Vec<Date>
+    dates: Vec<Date>,
 }
+#[derive(Default, Debug, Deserialize)]
 pub struct Date {
     /// Date string formatted as dd.MM.yyyy
     date: String,
     /// Index of the day in the week
     day: i8,
     /// Vector of [`Class`] structs
-    classes: Vec<Class>
+    classes: Vec<Class>,
 }
+#[derive(Default, Debug, Deserialize)]
 pub struct Class {
     /// Start and end time of the class, formatted as 'hh:mm - hh:mm'
     time: String,
@@ -31,5 +35,22 @@ pub struct Class {
     /// Groups that should visit the class
     groups: Vec<String>,
     /// Teachers
-    teachers: Vec<String>
+    teachers: Vec<String>,
 }
+/// CHSU api SUCKS and this is the REAL form of the request, AND it is a vector
+pub type Request = (
+    i16,
+    Vec<(
+        String,
+        i8,
+        Vec<(
+            String,
+            String,
+            String,
+            String,
+            String,
+            Vec<String>,
+            Vec<String>,
+        )>,
+    )>,
+);
