@@ -11,6 +11,6 @@ async fn main() {
         .end("19.02.2024".into())
         .build()
         .unwrap();
-    let r = request::get_weeks(test_request).await.unwrap();
+    let r = request::get_weeks(test_request).await;
     dbg!(r);
 }

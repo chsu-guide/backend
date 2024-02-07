@@ -1,10 +1,9 @@
-use std::error::Error;
 use base64::Engine;
 use crate::schedule::models::{schedule::Week};
-use reqwest::{Url, Result as ReqwestResult};
+use reqwest::{Url};
 use std::result::Result;
+use thiserror::Error;
 use url::ParseError;
-use crate::schedule::models::schedule::Schedule;
 
 /// # Request logic:
 ///
@@ -29,12 +28,21 @@ use crate::schedule::models::schedule::Schedule;
 /// ### Example:
 ///
 /// https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjA2LjAyLjIwMjQiXQ_=.json
-pub async fn get_weeks(request: ScheduleRequest) -> serde_json::Result<Vec<Week>> {
-    let schedule_unparsed = get_schedule(request).await.unwrap();
-    let schedule_req = serde_json::from_str::<Vec<Week>>(&schedule_unparsed);
-    schedule_req
+pub async fn get_weeks(request: ScheduleRequest) -> Result<Vec<Week>, ScheduleError> {
+    let schedule_unparsed = get_schedule(request).await?;
+    let schedule_req = serde_json::from_str::<Vec<Week>>(&schedule_unparsed)?;
+    Ok(schedule_req)
 }
-async fn get_schedule(request: ScheduleRequest) -> Result<String, Box<dyn Error>> {
+#[derive(Error, Debug)]
+pub enum ScheduleError {
+    #[error("Error while parsing url: {0}")]
+    ParseError(#[from] url::ParseError),
+    #[error("Error during http request: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+    #[error("Error during deserialization: {0}")]
+    SerdeError(#[from] serde_json::Error)
+}
+async fn get_schedule(request: ScheduleRequest) -> Result<String, ScheduleError> {
     let url = request.form_schedule_url()?;
     let res = reqwest::get(url).await?.text().await?;
     Ok(res)
