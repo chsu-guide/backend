@@ -1,3 +1,3 @@
 pub mod schedule;
 pub mod students;
-mod tutors;
+pub mod tutors;

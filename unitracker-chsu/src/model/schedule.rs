@@ -1,9 +1,4 @@
 use serde_derive::Deserialize;
-
-#[derive(Default, Debug, Deserialize)]
-pub struct Schedule {
-    weeks: Vec<Week>,
-}
 #[derive(Default, Debug, Deserialize)]
 pub struct Week {
     /// Index of the week starting at September 1st
@@ -37,20 +32,3 @@ pub struct Class {
     /// Teachers
     teachers: Vec<String>,
 }
-/// CHSU api SUCKS and this is the REAL form of the request, AND it is a vector
-pub type Request = (
-    i16,
-    Vec<(
-        String,
-        i8,
-        Vec<(
-            String,
-            String,
-            String,
-            String,
-            String,
-            Vec<String>,
-            Vec<String>,
-        )>,
-    )>,
-);

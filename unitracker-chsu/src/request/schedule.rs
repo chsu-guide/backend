@@ -3,7 +3,9 @@ use base64::Engine;
 use reqwest::Url;
 use std::result::Result;
 use thiserror::Error;
+use time::convert::Week;
 use url::ParseError;
+use crate::error::ScheduleError;
 
 /// # Request logic:
 ///
@@ -33,30 +35,11 @@ pub async fn get_weeks(request: ScheduleRequest) -> Result<Vec<Week>, ScheduleEr
     let schedule_req = serde_json::from_slice::<Vec<Week>>(&schedule_unparsed)?;
     Ok(schedule_req)
 }
-#[derive(Error, Debug)]
-pub enum ScheduleError {
-    #[error("Error while parsing url: {0}")]
-    ParseError(#[from] url::ParseError),
-    #[error("Error during http request: {0}")]
-    ReqwestError(#[from] reqwest::Error),
-    #[error("Error during deserialization: {0}")]
-    SerdeError(#[from] serde_json::Error),
-}
 async fn get_schedule(request: ScheduleRequest) -> Result<axum::body::Bytes, ScheduleError> {
     let url = request.form_schedule_url()?;
     let res = reqwest::get(url).await?.bytes().await?;
     Ok(res)
 }
-// async fn get_groups() -> ReqwestResult<HashMap<String, String>> {
-//     let url = "https://www.chsu.ru/raspisanie/cache/student.json?";
-//     let res = reqwest::get(url).await?.text().await?;
-//     let res_format = serde_json::from_str::<Vec<Students>>(&res).unwrap();
-//     let mut map: HashMap<String, String> = Default::default();
-//     for student in res_format {
-//         map.insert(student.code, student.group);
-//     }
-//     Ok(map)
-// }
 
 /// Possible request types. Only two exist
 #[derive(Debug, Eq, PartialEq)]
@@ -165,7 +148,7 @@ impl ScheduleRequest {
 
 #[cfg(test)]
 mod builder_tests {
-    use crate::schedule::request::{RequestType, ScheduleRequest, ScheduleRequestBuilder};
+    use crate::schedule::schedule::{RequestType, ScheduleRequest, ScheduleRequestBuilder};
     #[test]
     fn test_correct_builder() {
         let test_request: ScheduleRequest = ScheduleRequestBuilder::new()
@@ -210,7 +193,7 @@ mod builder_tests {
 }
 #[cfg(test)]
 mod url_tests {
-    use crate::schedule::request::{RequestType, ScheduleRequestBuilder};
+    use crate::schedule::schedule::{RequestType, ScheduleRequestBuilder};
     use url::Url;
 
     #[test]
