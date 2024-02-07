@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::error::Error;
 use base64::Engine;
-use tokio::io::AsyncWriteExt;
-use crate::schedule::models::{schedule::Week, students::Students};
-use serde_derive;
-use serde;
-use reqwest;
+use crate::schedule::models::{schedule::Week};
+use reqwest::{Url, Result as ReqwestResult};
+use std::result::Result;
+use url::ParseError;
+
 /// # Request logic:
 ///
 /// ## Link:
@@ -28,44 +28,192 @@ use reqwest;
 /// ### Example:
 ///
 /// https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjA2LjAyLjIwMjQiXQ_=.json?1707052923221
-pub async fn get_weeks() -> serde_json::Result<Vec<Week>> {
-    let schedule_unparsed = get_schedule().await.unwrap();
+pub async fn get_weeks(request: ScheduleRequest) -> serde_json::Result<Vec<Week>> {
+    let schedule_unparsed = get_schedule(request).await.unwrap();
     let schedule_req = serde_json::from_str::<Vec<Week>>(&schedule_unparsed);
     schedule_req
 }
-async fn get_schedule() -> reqwest::Result<String> {
-    let url = form_schedule_url("student", "1739582424505775711", "", "06.02.2024","29.02.2024");
+async fn get_schedule(query: ScheduleRequest) -> Result<String, Box<dyn Error>> {
+    let url = query.form_schedule_url()?;
     let res = reqwest::get(url).await?.text().await?;
     Ok(res)
 }
-async fn get_groups() -> reqwest::Result<HashMap<String, String>> {
-    let url = "https://www.chsu.ru/raspisanie/cache/student.json?";
-    let res = reqwest::get(url).await?.text().await?;
-    let res_format = serde_json::from_str::<Vec<Students>>(&res).unwrap();
-    let mut map: HashMap<String, String> = Default::default();
-    for student in res_format {
-        map.insert(student.code, student.group);
-    }
-    Ok(map)
+// async fn get_groups() -> ReqwestResult<HashMap<String, String>> {
+//     let url = "https://www.chsu.ru/raspisanie/cache/student.json?";
+//     let res = reqwest::get(url).await?.text().await?;
+//     let res_format = serde_json::from_str::<Vec<Students>>(&res).unwrap();
+//     let mut map: HashMap<String, String> = Default::default();
+//     for student in res_format {
+//         map.insert(student.code, student.group);
+//     }
+//     Ok(map)
+// }
+
+/// Possible request types. Only two exist
+#[derive(Debug, Eq, PartialEq)]
+pub enum RequestType {
+    Student,
+    Teacher
 }
-fn form_schedule_url(request_type: &str, group_id: &str, teacher_id: &str, start: &str, end: &str) -> reqwest::Url {
-    let request_string = format!("[\"{}\",\"{}\",null,\"{}\",\"{}\"]", request_type, group_id, start, end);
-    let b64_req = base64::engine::general_purpose::STANDARD.encode(request_string.clone());
-    let url = format!(
-        "https://www.chsu.ru/raspisanie/cache/{}.json",
-        b64_req
-    );
-    let url = url.parse::<reqwest::Url>().unwrap();
-    url
+/// A struct with parameters for [`get_schedule()`] request
+#[derive(Debug, Eq, PartialEq)]
+pub struct ScheduleRequest {
+    request_type: RequestType,
+    group_id: Option<String>,
+    teacher_id: Option<String>,
+    start: String,
+    end: Option<String>
+}
+/// Possible errors emitted by [`ScheduleRequestBuilder`]
+#[derive(Debug)]
+pub enum ScheduleBuildErrors {
+    NoRequestType,
+    NoDate
+}
+/// Builder for [`ScheduleRequest`]
+#[derive(Debug, Default)]
+pub struct ScheduleRequestBuilder {
+    request_type: Option<RequestType>,
+    group_id: Option<String>,
+    teacher_id: Option<String>,
+    start: Option<String>,
+    end: Option<String>
+}
+impl ScheduleRequestBuilder {
+    pub fn new() -> Self {
+        ScheduleRequestBuilder::default()
+    }
+    pub fn request_type(mut self, request_type: RequestType) -> Self {
+        self.request_type = Some(request_type);
+        self
+    }
+    pub fn group_id(mut self, group_id: &str) -> Self {
+        self.group_id = Some(group_id.into());
+        self
+    }
+    pub fn teacher_id(mut self, teacher_id: &str) -> Self {
+        self.teacher_id = Some(teacher_id.into());
+        self
+    }
+    pub fn start(mut self, start: String) -> Self {
+        self.start = Some(start);
+        self
+    }
+    pub fn end(mut self, end: String) -> Self {
+        self.end = Some(end);
+        self
+    }
+    pub fn build(mut self) -> Result<ScheduleRequest, ScheduleBuildErrors> {
+        let req = ScheduleRequest {
+            request_type: match self.request_type {
+                Some(req) => req,
+                None => return Err(ScheduleBuildErrors::NoRequestType),
+            },
+            group_id: self.group_id,
+            teacher_id: self.teacher_id,
+            start: match self.start {
+                Some(start) => start,
+                None => return Err(ScheduleBuildErrors::NoDate),
+            },
+            end: self.end,
+        };
+        Ok(req)
+    }
+}
+
+impl ScheduleRequest {
+    pub fn form_schedule_url(&self) -> Result<Url, ParseError> {
+        let query = self.form_base64_query();
+        let url_string = format!("https://www.chsu.ru/raspisanie/cache/{}.json", query);
+        url_string.parse::<reqwest::Url>()
+    }
+    fn form_base64_query(&self) -> String {
+        let request_type = match &self.request_type {
+            RequestType::Student => {"student"}
+            RequestType::Teacher => {"tutor"}
+        };
+        let group_id = match &self.group_id {
+            Some(group) => group,
+            None => "null",
+        };
+        let teacher_id = match &self.teacher_id {
+            Some(teacher) => teacher,
+            None => "null"
+        };
+        let start: &String = &self.start;
+        let end = match &self.end {
+            Some(date) => date,
+            None => start
+        };
+
+        let query = format!("[\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]", request_type, group_id, teacher_id, start, end);
+        base64::engine::general_purpose::STANDARD.encode(query)
+    }
 }
 
 #[cfg(test)]
-mod request_tests {
-    use crate::schedule::request::form_schedule_url;
+mod builder_tests {
+    use crate::schedule::request::{RequestType, ScheduleRequest, ScheduleRequestBuilder};
     #[test]
-    fn test_schedule_url() {
-        let test_url = form_schedule_url("student", "1739582424505775711", "", "06.02.2024","29.02.2024");
-        let url = "https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjI5LjAyLjIwMjQiXQ==.json".parse::<reqwest::Url>().unwrap();
-        assert_eq!(test_url, url);
+    fn test_correct_builder() {
+        let test_request: ScheduleRequest = ScheduleRequestBuilder::new()
+            .request_type(RequestType::Student)
+            .group_id("1739582424505775711")
+            .teacher_id("1472314025600620405")
+            .start("06.02.2024".into())
+            .end("06.02.2024".into())
+            .build()
+            .unwrap();
+        let correct_request = ScheduleRequest {
+            request_type: RequestType::Student,
+            group_id: Some("1739582424505775711".into()),
+            teacher_id: Some("1472314025600620405".into()),
+            start: "06.02.2024".into(),
+            end: Some("06.02.2024".into()),
+        };
+        assert_eq!(test_request, correct_request);
+    }
+    #[test]
+    #[should_panic]
+    fn test_missing_request_type() {
+        let test_request: ScheduleRequest = ScheduleRequestBuilder::new()
+            .group_id("1739582424505775711")
+            .teacher_id("1472314025600620405")
+            .start("06.02.2024".into())
+            .end("06.02.2024".into())
+            .build()
+            .unwrap();
+    }
+    #[test]
+    #[should_panic]
+    fn test_missing_date() {
+        let test_request: ScheduleRequest = ScheduleRequestBuilder::new()
+            .request_type(RequestType::Student)
+            .group_id("1739582424505775711")
+            .teacher_id("1472314025600620405")
+            .end("06.02.2024".into())
+            .build()
+            .unwrap();
+    }
+}
+#[cfg(test)]
+mod url_tests {
+    use url::Url;
+    use crate::schedule::request::{RequestType, ScheduleRequestBuilder};
+
+    #[test]
+    fn test_url_correctness() {
+        let correct_url: Url = "https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsIjE0NzIzMTQwMjU2MDA2MjA0MDUiLCIwNi4wMi4yMDI0IiwiMDYuMDIuMjAyNCJd.json".parse().unwrap();
+        let test_url: Url = ScheduleRequestBuilder::new()
+            .request_type(RequestType::Student)
+            .group_id("1739582424505775711")
+            .teacher_id("1472314025600620405")
+            .start("06.02.2024".into())
+            .end("06.02.2024".into())
+            .build()
+            .unwrap()
+            .form_schedule_url()
+            .unwrap();
+        assert_eq!(correct_url, test_url)
     }
 }
