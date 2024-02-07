@@ -5,8 +5,6 @@ use crate::schedule::models::{schedule::Week, students::Students};
 use serde_derive;
 use serde;
 use reqwest;
-use tokio::net::TcpStream;
-
 /// # Request logic:
 ///
 /// ## Link:
@@ -54,7 +52,7 @@ fn form_schedule_url(request_type: &str, group_id: &str, teacher_id: &str, start
     let request_string = format!("[\"{}\",\"{}\",null,\"{}\",\"{}\"]", request_type, group_id, start, end);
     let b64_req = base64::engine::general_purpose::STANDARD.encode(request_string.clone());
     let url = format!(
-        "https://www.chsu.ru/raspisanie/cache/{}_.json",
+        "https://www.chsu.ru/raspisanie/cache/{}.json",
         b64_req
     );
     let url = url.parse::<reqwest::Url>().unwrap();
@@ -67,7 +65,7 @@ mod request_tests {
     #[test]
     fn test_schedule_url() {
         let test_url = form_schedule_url("student", "1739582424505775711", "", "06.02.2024","29.02.2024");
-        let url = "https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjI5LjAyLjIwMjQiXQ==.json?1707223245711".parse::<reqwest::Url>().unwrap();
+        let url = "https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjI5LjAyLjIwMjQiXQ==.json".parse::<reqwest::Url>().unwrap();
         assert_eq!(test_url, url);
     }
 }
