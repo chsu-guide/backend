@@ -1,9 +1,8 @@
-use crate::schedule::models::schedule::Week;
+use crate::model::schedule::Week;
 use base64::Engine;
 use reqwest::Url;
 use std::result::Result;
 use thiserror::Error;
-use time::convert::Week;
 use url::ParseError;
 use crate::error::ScheduleError;
 
@@ -25,22 +24,22 @@ use crate::error::ScheduleError;
 /// start date (dd.MM.yyyy),
 /// end date (dd.MM.yyyy)
 ///
-/// _=.json to specify the format
+/// .json to specify the format
 ///
 /// ### Example:
 ///
-/// https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjA2LjAyLjIwMjQiXQ_=.json
-pub async fn get_weeks(request: ScheduleRequest) -> Result<Vec<Week>, ScheduleError> {
-    let schedule_unparsed = get_schedule(request).await?;
-    let schedule_req = serde_json::from_slice::<Vec<Week>>(&schedule_unparsed)?;
+/// https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjA2LjAyLjIwMjQiXQ.json
+pub async fn get_schedule(request: ScheduleRequest) -> Result<Vec<Week>, ScheduleError> {
+    let schedule_unparsed = request_schedule(request).await?;
+    dbg!(&schedule_unparsed);
+    let schedule_req = serde_json::from_str::<Vec<Week>>(&schedule_unparsed)?;
     Ok(schedule_req)
 }
-async fn get_schedule(request: ScheduleRequest) -> Result<axum::body::Bytes, ScheduleError> {
+async fn request_schedule(request: ScheduleRequest) -> Result<String, ScheduleError> {
     let url = request.form_schedule_url()?;
-    let res = reqwest::get(url).await?.bytes().await?;
+    let res = reqwest::get(url).await?.text().await?;
     Ok(res)
 }
-
 /// Possible request types. Only two exist
 #[derive(Debug, Eq, PartialEq)]
 pub enum RequestType {
@@ -148,7 +147,7 @@ impl ScheduleRequest {
 
 #[cfg(test)]
 mod builder_tests {
-    use crate::schedule::schedule::{RequestType, ScheduleRequest, ScheduleRequestBuilder};
+    use crate::request::schedule::{RequestType, ScheduleRequest, ScheduleRequestBuilder};
     #[test]
     fn test_correct_builder() {
         let test_request: ScheduleRequest = ScheduleRequestBuilder::new()
@@ -193,8 +192,8 @@ mod builder_tests {
 }
 #[cfg(test)]
 mod url_tests {
-    use crate::schedule::schedule::{RequestType, ScheduleRequestBuilder};
     use url::Url;
+    use crate::request::schedule::{RequestType, ScheduleRequestBuilder};
 
     #[test]
     fn test_url_correctness() {

@@ -1,8 +1,10 @@
 use crate::error::ScheduleError;
-use crate::model::students::Students;
+use crate::model::students::Student;
 
-const STUDENT_ENDPOINT: String = "https://www.chsu.ru/raspisanie/cache/student.json".into();
-pub async fn get_groups() -> Result<Vec<Students>, ScheduleError> {
-    let res = reqwest::get(STUDENT_ENDPOINT).await?.bytes().await?;
-    let res_format = serde_json::from_slice::<Vec<Students>>(&res)?;
+const STUDENT_ENDPOINT: &str = "https://www.chsu.ru/raspisanie/cache/student.json";
+pub async fn get_students() -> Result<Vec<Student>, ScheduleError> {
+    let res = reqwest::get(STUDENT_ENDPOINT).await?.text().await?;
+    dbg!(&res);
+    let res_format = serde_json::from_str::<Vec<Student>>(&res)?;
+    Ok(res_format)
 }

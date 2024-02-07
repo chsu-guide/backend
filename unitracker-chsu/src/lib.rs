@@ -1,7 +1,3 @@
-pub mod schedule;
-pub mod models;
-mod students;
-mod tutors;
 mod model;
-mod request;
+pub mod request;
 mod error;
