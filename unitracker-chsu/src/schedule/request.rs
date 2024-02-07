@@ -1,6 +1,6 @@
+use crate::schedule::models::schedule::Week;
 use base64::Engine;
-use crate::schedule::models::{schedule::Week};
-use reqwest::{Url};
+use reqwest::Url;
 use std::result::Result;
 use thiserror::Error;
 use url::ParseError;
@@ -30,7 +30,7 @@ use url::ParseError;
 /// https://www.chsu.ru/raspisanie/cache/WyJzdHVkZW50IiwiMTczOTU4MjQyNDUwNTc3NTcxMSIsbnVsbCwiMDYuMDIuMjAyNCIsIjA2LjAyLjIwMjQiXQ_=.json
 pub async fn get_weeks(request: ScheduleRequest) -> Result<Vec<Week>, ScheduleError> {
     let schedule_unparsed = get_schedule(request).await?;
-    let schedule_req = serde_json::from_str::<Vec<Week>>(&schedule_unparsed)?;
+    let schedule_req = serde_json::from_slice::<Vec<Week>>(&schedule_unparsed)?;
     Ok(schedule_req)
 }
 #[derive(Error, Debug)]
@@ -40,11 +40,11 @@ pub enum ScheduleError {
     #[error("Error during http request: {0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("Error during deserialization: {0}")]
-    SerdeError(#[from] serde_json::Error)
+    SerdeError(#[from] serde_json::Error),
 }
-async fn get_schedule(request: ScheduleRequest) -> Result<String, ScheduleError> {
+async fn get_schedule(request: ScheduleRequest) -> Result<axum::body::Bytes, ScheduleError> {
     let url = request.form_schedule_url()?;
-    let res = reqwest::get(url).await?.text().await?;
+    let res = reqwest::get(url).await?.bytes().await?;
     Ok(res)
 }
 // async fn get_groups() -> ReqwestResult<HashMap<String, String>> {
@@ -62,7 +62,7 @@ async fn get_schedule(request: ScheduleRequest) -> Result<String, ScheduleError>
 #[derive(Debug, Eq, PartialEq)]
 pub enum RequestType {
     Student,
-    Teacher
+    Teacher,
 }
 /// A struct with parameters for [`get_schedule()`] request
 #[derive(Debug, Eq, PartialEq)]
@@ -71,13 +71,13 @@ pub struct ScheduleRequest {
     group_id: Option<String>,
     teacher_id: Option<String>,
     start: String,
-    end: Option<String>
+    end: Option<String>,
 }
 /// Possible errors emitted by [`ScheduleRequestBuilder`]
 #[derive(Debug)]
 pub enum ScheduleBuildErrors {
     NoRequestType,
-    NoDate
+    NoDate,
 }
 /// Builder for [`ScheduleRequest`]
 #[derive(Debug, Default)]
@@ -86,7 +86,7 @@ pub struct ScheduleRequestBuilder {
     group_id: Option<String>,
     teacher_id: Option<String>,
     start: Option<String>,
-    end: Option<String>
+    end: Option<String>,
 }
 impl ScheduleRequestBuilder {
     pub fn new() -> Self {
@@ -112,7 +112,7 @@ impl ScheduleRequestBuilder {
         self.end = Some(end);
         self
     }
-    pub fn build(mut self) -> Result<ScheduleRequest, ScheduleBuildErrors> {
+    pub fn build(self) -> Result<ScheduleRequest, ScheduleBuildErrors> {
         let req = ScheduleRequest {
             request_type: match self.request_type {
                 Some(req) => req,
@@ -138,8 +138,8 @@ impl ScheduleRequest {
     }
     fn form_base64_query(&self) -> String {
         let request_type = match &self.request_type {
-            RequestType::Student => {"student"}
-            RequestType::Teacher => {"tutor"}
+            RequestType::Student => "student",
+            RequestType::Teacher => "tutor",
         };
         let group_id = match &self.group_id {
             Some(group) => format!("\"{}\"", group),
@@ -147,15 +147,18 @@ impl ScheduleRequest {
         };
         let teacher_id = match &self.teacher_id {
             Some(teacher) => format!("\"{}\"", teacher),
-            None => "null".to_owned()
+            None => "null".to_owned(),
         };
         let start: &String = &self.start;
         let end = match &self.end {
             Some(date) => date,
-            None => start
+            None => start,
         };
 
-        let query = format!("[\"{}\",{},{},\"{}\",\"{}\"]", request_type, group_id, teacher_id, start, end);
+        let query = format!(
+            "[\"{}\",{},{},\"{}\",\"{}\"]",
+            request_type, group_id, teacher_id, start, end
+        );
         base64::engine::general_purpose::STANDARD.encode(query)
     }
 }
@@ -207,8 +210,8 @@ mod builder_tests {
 }
 #[cfg(test)]
 mod url_tests {
-    use url::Url;
     use crate::schedule::request::{RequestType, ScheduleRequestBuilder};
+    use url::Url;
 
     #[test]
     fn test_url_correctness() {
