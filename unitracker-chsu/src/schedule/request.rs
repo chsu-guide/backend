@@ -4,6 +4,7 @@ use crate::schedule::models::{schedule::Week};
 use reqwest::{Url, Result as ReqwestResult};
 use std::result::Result;
 use url::ParseError;
+use crate::schedule::models::schedule::Schedule;
 
 /// # Request logic:
 ///
@@ -33,8 +34,8 @@ pub async fn get_weeks(request: ScheduleRequest) -> serde_json::Result<Vec<Week>
     let schedule_req = serde_json::from_str::<Vec<Week>>(&schedule_unparsed);
     schedule_req
 }
-async fn get_schedule(query: ScheduleRequest) -> Result<String, Box<dyn Error>> {
-    let url = query.form_schedule_url()?;
+async fn get_schedule(request: ScheduleRequest) -> Result<String, Box<dyn Error>> {
+    let url = request.form_schedule_url()?;
     let res = reqwest::get(url).await?.text().await?;
     Ok(res)
 }
@@ -133,12 +134,12 @@ impl ScheduleRequest {
             RequestType::Teacher => {"tutor"}
         };
         let group_id = match &self.group_id {
-            Some(group) => group,
-            None => "null",
+            Some(group) => format!("\"{}\"", group),
+            None => "null".to_owned(),
         };
         let teacher_id = match &self.teacher_id {
-            Some(teacher) => teacher,
-            None => "null"
+            Some(teacher) => format!("\"{}\"", teacher),
+            None => "null".to_owned()
         };
         let start: &String = &self.start;
         let end = match &self.end {
@@ -146,7 +147,7 @@ impl ScheduleRequest {
             None => start
         };
 
-        let query = format!("[\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"]", request_type, group_id, teacher_id, start, end);
+        let query = format!("[\"{}\",{},{},\"{}\",\"{}\"]", request_type, group_id, teacher_id, start, end);
         base64::engine::general_purpose::STANDARD.encode(query)
     }
 }
