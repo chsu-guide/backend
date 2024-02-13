@@ -1,3 +1,5 @@
 pub(crate) mod schedule;
-pub(crate) mod students;
+pub(crate) mod groups;
 pub(crate) mod tutors;
+mod buildings;
+mod auditoriums;
