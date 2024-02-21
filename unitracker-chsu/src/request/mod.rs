@@ -1,3 +1,3 @@
-pub mod schedule;
-pub mod students;
-pub mod tutors;
+mod auditoriums;
+mod constants;
+pub mod auth;
