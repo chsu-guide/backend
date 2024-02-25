@@ -1,7 +1,10 @@
 use serde_derive::Deserialize;
-pub type ClassList = Vec<Class>;
+use crate::model::buildings::Building;
+use crate::model::teachers::TeacherList;
+use crate::model::disciplines::Discipline;
 
-#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[derive(Default, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Class {
     pub id: i64,
     /// Date formatted as dd.mm.YYYY
@@ -14,11 +17,11 @@ pub struct Class {
     /// Groups attending the class
     pub groups: Vec<Group>,
     /// Building the class is located in
-    pub build: Build,
+    pub build: Building,
     /// Auditory within the building
     pub auditory: Auditory,
     /// Lecturers reading the lecture
-    pub lecturers: Vec<Lecturer>,
+    pub lecturers: TeacherList,
     /// Abbreviation of the lesson type (п, л, лб, экз)
     pub abbrlessontype: String,
     /// Full lesson type
@@ -33,36 +36,12 @@ pub struct Class {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
-pub struct Discipline {
-    pub id: i64,
-    pub title: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
 pub struct Group {
     pub id: i64,
     pub title: String,
 }
-
-#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
-pub struct Build {
-    pub id: i64,
-    pub title: String,
-}
-
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
 pub struct Auditory {
     pub id: i64,
     pub title: String,
 }
-
-#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
-pub struct Lecturer {
-    pub id: i64,
-    pub last_name: String,
-    pub first_name: String,
-    pub middle_name: String,
-    pub short_name: String,
-    pub fio: String,
-}
-

@@ -2,7 +2,7 @@ use serde_derive::Deserialize;
 
 pub type GroupList = Vec<Group>;
 /// Information about the study group
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 pub struct Group {
     /// group ID for db
     pub id: i64,

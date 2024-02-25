@@ -1,7 +1,8 @@
 use serde_derive::Deserialize;
 
 pub type TeacherList = Vec<Teacher>;
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Teacher {
     /// Numerical ID for db
     pub id: i64,

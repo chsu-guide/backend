@@ -1,13 +1,13 @@
 use reqwest::{ClientBuilder, Method, StatusCode};
-use crate::model::auditoriums::*;
-use crate::request::RequestErrors;
-use crate::request::constants::*;
+use crate::model::groups::GroupList;
+use crate::request::{AuthErrors, RequestErrors};
+use crate::request::constants::{BASE_URL, STUDENT_GROUP};
 
-pub async fn get_auditoriums(bearer: &str) -> Result<AuditoriumList, RequestErrors> {
-    let auditorium_url = BASE_URL.to_owned() + AUDITORIUM;
+pub async fn get_groups(bearer: &str) -> Result<GroupList, RequestErrors> {
+    let teachers_url = BASE_URL.to_owned() + STUDENT_GROUP;
     let client = ClientBuilder::new().user_agent("").build()?;
     let mut response = client
-        .request(Method::GET, auditorium_url)
+        .request(Method::GET, teachers_url)
         .header("content-type", "application/json")
         .bearer_auth(bearer)
         .send()

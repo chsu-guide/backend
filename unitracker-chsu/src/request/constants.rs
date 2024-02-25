@@ -9,3 +9,4 @@ pub const DEPARTMENT: &str = "/department/v2";
 pub const AUDITORIUM: &str = "/auditorium/v1";
 pub const TIMETABLE: &str = "/timetable/v1";
 pub const DISCIPLINE: &str = "/discipline/v1";
+pub const TEACHERS: &str = "/teacher/v1";

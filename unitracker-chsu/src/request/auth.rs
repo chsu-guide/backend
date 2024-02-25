@@ -1,29 +1,31 @@
-use serde::Serialize;
 use serde_json;
 use crate::model::auth::*;
-use reqwest::{Body, Client, ClientBuilder, Error, Method, RequestBuilder, Response};
+use reqwest::{Body, ClientBuilder, Method, StatusCode};
+use crate::request::AuthErrors;
 use crate::request::constants::{AUTH_SIGNIN, BASE_URL};
 
-pub async fn get_auth() -> AuthResponse {
+
+
+pub async fn get_auth() -> Result<AuthResponse, AuthErrors> {
     let auth_request = AuthRequest::new();
-    let auth_request_de = match serde_json::to_string(&auth_request) {
-        Ok(auth) => auth,
+    let auth_request_de: Body = match serde_json::to_string(&auth_request) {
+        Ok(auth) => auth.into(),
         Err(e) => panic!("{}", e),
     };
     let auth_url = BASE_URL.to_owned() + AUTH_SIGNIN;
-    let request_body: Body = auth_request_de.into();
-    let user_agent = "balls";
-
-    let client = ClientBuilder::new().user_agent(user_agent).build().unwrap();
-    let response = match client
-        .request(Method::GET, auth_url)
-        .body(request_body)
+    let client = ClientBuilder::new().user_agent("").build()?;
+    let response = client
+        .request(Method::POST, auth_url)
+        .header("content-type", "application/json")
+        .body(auth_request_de)
         .send()
-        .await {
-        Ok(res) => res,
-        Err(e) => panic!("{}", e),
-    };
+        .await?;
 
-    let auth_data: AuthResponse = response.json().await.unwrap();
-    auth_data
+    let auth_response = match response.status() {
+        StatusCode::OK => Ok(response.json().await?),
+        StatusCode::BAD_REQUEST => Err(AuthErrors::EmptyRequestBody),
+        StatusCode::UNAUTHORIZED => Err(AuthErrors::IncorrectAuthData),
+        _ => Err(AuthErrors::UnknownError)
+    };
+    auth_response
 }
