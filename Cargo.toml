@@ -1,4 +1,4 @@
-workspace = { members = ["unitracker-chsu"] }
+workspace = { members = ["unitracker-chsu", "unitracker-postgres"] }
 [package]
 name = "unitracker-backend"
 version = "0.1.0"

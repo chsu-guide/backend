@@ -2,7 +2,8 @@ use chrono::{NaiveDate, NaiveDateTime};
 use reqwest::{ClientBuilder, Method, StatusCode};
 use url::Url;
 use crate::model::groups::Group;
-use crate::model::schedule::{Class, Lecturer};
+use crate::model::schedule::{Class};
+use crate::model::teachers::Teacher;
 use crate::request::constants::{BASE_URL, TIMETABLE};
 use crate::request::RequestErrors;
 
@@ -20,14 +21,13 @@ pub async fn get_schedule(bearer: &str, schedule_request: ScheduleRequest) -> Re
         StatusCode::UNAUTHORIZED => Err(RequestErrors::InvalidBearerToken),
         _ => Err(RequestErrors::UnknownError)
     };
-    // dbg!(&response_result);
     response_result
 }
 
 pub enum ScheduleType {
     Full,
     Group(Group),
-    Lecturer(Lecturer)
+    Lecturer(Teacher)
 }
 
 pub struct ScheduleRequest {
@@ -67,8 +67,6 @@ impl ScheduleRequestBuilder {
         ScheduleRequest {
             start: self.start.unwrap(),
             end: self.end.unwrap(),
-            // lecturer: self.lecturer,
-            // group: self.group,
             schedule_type: self.schedule_type.unwrap()
         }
     }

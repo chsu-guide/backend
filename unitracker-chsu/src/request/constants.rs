@@ -1,5 +1,3 @@
-use url::Url;
-
 pub const BASE_URL: &str = "http://api.chsu.ru/api";
 pub const AUTH_VALID: &str = "/auth/valid";
 pub const AUTH_SIGNIN: &str = "/auth/signin";
