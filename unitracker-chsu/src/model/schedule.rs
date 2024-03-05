@@ -6,7 +6,7 @@ use crate::model::disciplines::Discipline;
 #[derive(Default, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Class {
-    pub id: i64,
+    pub id: u64,
     /// Date formatted as dd.mm.YYYY
     pub date_event: String,
     /// Start time formatted as hh:mm
@@ -27,21 +27,21 @@ pub struct Class {
     /// Full lesson type
     pub lessontype: String,
     /// Week index starting from September 1st
-    pub week: i64,
+    pub week: u8,
     /// Day index starting from Monday
-    pub weekday: i64,
+    pub weekday: u8,
     pub week_type: String,
     pub online_event: Option<String>,
-    pub online: i64,
+    pub online: u8,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
 pub struct Group {
-    pub id: i64,
+    pub id: u64,
     pub title: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
 pub struct Auditory {
-    pub id: i64,
+    pub id: u64,
     pub title: String,
 }

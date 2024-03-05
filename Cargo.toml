@@ -8,6 +8,9 @@ edition = "2021"
 
 [dependencies]
 unitracker_chsu = { path = "./unitracker-chsu" }
+unitracker-postgres = { path = "./unitracker-postgres"}
 tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
 reqwest = "0.11.24"
 chrono = "0.4.34"
+sqlx = { version = "0.7.3", features = ["sqlx-macros", "postgres", "runtime-tokio", "time"] }
+dotenv = "0.15.0"

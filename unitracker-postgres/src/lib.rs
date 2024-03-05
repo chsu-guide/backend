@@ -1,5 +1,6 @@
-mod database;
-mod models;
+pub mod database;
+pub mod models;
+pub mod impls;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right

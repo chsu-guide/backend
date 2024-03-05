@@ -8,7 +8,7 @@ pub struct Group {
     pub id: i64,
     pub title: String,
     /// Study year
-    pub course: i64,
+    pub course: i8,
     /// Study faculty
     pub faculty: Faculty,
     /// Which chair the faculty is from
