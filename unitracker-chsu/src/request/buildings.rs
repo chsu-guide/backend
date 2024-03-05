@@ -3,7 +3,7 @@ use crate::model::buildings::BuildingList;
 use crate::request::RequestErrors;
 use crate::request::constants::*;
 
-pub async fn get_teachers(bearer: &str) -> Result<BuildingList, RequestErrors> {
+pub async fn get_buildings(bearer: &str) -> Result<BuildingList, RequestErrors> {
     let teachers_url = BASE_URL.to_owned() + BUILDING;
     let client = ClientBuilder::new().user_agent("").build()?;
     let mut response = client

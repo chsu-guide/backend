@@ -5,7 +5,7 @@ mod constants;
 pub mod auth;
 pub mod teachers;
 pub mod groups;
-mod buildings;
+pub mod buildings;
 pub mod schedule;
 
 #[derive(Error, Debug)]

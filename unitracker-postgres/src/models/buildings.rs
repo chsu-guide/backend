@@ -1,5 +1,6 @@
 use unitracker_chsu::model::buildings::Building as ApiBuilding;
 
+#[derive(Debug)]
 pub struct DbBuilding {
     pub id: i64,
     pub title: Box<str>,
