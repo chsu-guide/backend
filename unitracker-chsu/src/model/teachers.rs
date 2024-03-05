@@ -5,7 +5,7 @@ pub type TeacherList = Vec<Teacher>;
 #[serde(rename_all = "camelCase")]
 pub struct Teacher {
     /// Numerical ID for db
-    pub id: u64,
+    pub id: i64,
     pub last_name: String,
     pub first_name: String,
     pub middle_name: Option<String>,

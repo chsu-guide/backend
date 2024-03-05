@@ -1,6 +1,6 @@
 pub mod auditoriums;
-mod teachers;
+pub(crate) mod teachers;
 pub(crate) mod buildings;
 mod disciplines;
-mod schedule;
+pub(crate) mod schedule;
 mod groups;

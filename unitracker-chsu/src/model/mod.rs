@@ -1,4 +1,4 @@
-pub(crate) mod schedule;
+pub mod schedule;
 pub(crate) mod groups;
 pub mod teachers;
 pub mod buildings;
