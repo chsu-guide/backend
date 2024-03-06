@@ -3,10 +3,10 @@ use crate::model::buildings::Building;
 use crate::model::teachers::TeacherList;
 use crate::model::disciplines::Discipline;
 
-#[derive(Default, Debug, Deserialize)]
+#[derive(Default, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Class {
-    pub id: u64,
+    pub id: i64,
     /// Date formatted as dd.mm.YYYY
     pub date_event: String,
     /// Start time formatted as hh:mm
@@ -17,31 +17,31 @@ pub struct Class {
     /// Groups attending the class
     pub groups: Vec<Group>,
     /// Building the class is located in
-    pub build: Building,
+    pub build: Option<Building>,
     /// Auditory within the building
-    pub auditory: Auditory,
+    pub auditory: Option<Auditory>,
     /// Lecturers reading the lecture
-    pub lecturers: TeacherList,
+    pub lecturers: Option<TeacherList>,
     /// Abbreviation of the lesson type (п, л, лб, экз)
-    pub abbrlessontype: String,
+    pub abbrlessontype: Option<String>,
     /// Full lesson type
-    pub lessontype: String,
+    pub lessontype: Option<String>,
     /// Week index starting from September 1st
-    pub week: u8,
+    pub week: i8,
     /// Day index starting from Monday
-    pub weekday: u8,
+    pub weekday: i8,
     pub week_type: String,
     pub online_event: Option<String>,
-    pub online: u8,
+    pub online: i8,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
 pub struct Group {
-    pub id: u64,
+    pub id: i64,
     pub title: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
 pub struct Auditory {
-    pub id: u64,
-    pub title: String,
+    pub id: i64,
+    pub title: Option<String>,
 }
