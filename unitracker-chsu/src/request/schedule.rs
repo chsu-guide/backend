@@ -7,6 +7,24 @@ use crate::model::teachers::Teacher;
 use crate::request::constants::{BASE_URL, TIMETABLE};
 use crate::request::RequestErrors;
 
+pub async fn get_school_week(bearer: &str, date: NaiveDate) -> Result<usize, RequestErrors> {
+    // println!("{}", date.format("%d.%m.%Y").to_string());
+    let week_url = BASE_URL.to_owned() + TIMETABLE + "/numweek/" + &date.format("%d.%m.%Y").to_string() + "/";
+    let client = ClientBuilder::new().user_agent("").build()?;
+    let mut response = client
+        .request(Method::GET, week_url)
+        .header("content-type", "application/json")
+        .bearer_auth(bearer)
+        .send()
+        .await?;
+    let response_result = match response.status() {
+        StatusCode::OK => Ok(response.text().await?.parse::<usize>()?),
+        StatusCode::UNAUTHORIZED => Err(RequestErrors::InvalidBearerToken),
+        _ => Err(RequestErrors::UnknownError)
+    };
+    response_result
+}
+
 pub async fn get_schedule(bearer: &str, schedule_request: ScheduleRequest) -> Result<Vec<Class>, RequestErrors> {
     let schedule_url: Url = schedule_request.into();
     let client = ClientBuilder::new().user_agent("").build()?;

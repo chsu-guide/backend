@@ -1,3 +1,4 @@
+use std::string::ParseError;
 use thiserror::Error;
 
 pub mod auditoriums;
@@ -27,4 +28,6 @@ pub enum RequestErrors {
     UnknownError,
     #[error("Generic reqwest error, your Bearer token is probably invalid")]
     ReqwestError(#[from] reqwest::Error),
+    #[error("Parsing error")]
+    ParsingError(#[from] std::num::ParseIntError)
 }
