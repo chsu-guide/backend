@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            id, name, number, height, width, length, building_id\n        FROM\n            auditorium\n        WHERE\n            id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "height",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 4,
+        "name": "width",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 5,
+        "name": "length",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 6,
+        "name": "building_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "1a4cfb5d4947e003227dce46ef01b4457acf08d4b3e75c7fa424100c9b759b91"
+}

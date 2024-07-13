@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO schedule_auditorium\n        (schedule_id, auditorium_id)\n        VALUES ($1, $2)\n        ON CONFLICT (schedule_id, auditorium_id) DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2370527d93cafbc6eb675b4d41df3b3213f53a11c8039bd06191bf3158de7855"
+}

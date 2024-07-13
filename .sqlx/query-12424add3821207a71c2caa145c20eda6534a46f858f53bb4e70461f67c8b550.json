@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO building\n        (id, title)\n        VALUES ($1, $2)\n        ON CONFLICT (id) DO NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "12424add3821207a71c2caa145c20eda6534a46f858f53bb4e70461f67c8b550"
+}
