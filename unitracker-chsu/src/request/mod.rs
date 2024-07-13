@@ -8,6 +8,7 @@ pub mod teachers;
 pub mod groups;
 pub mod buildings;
 pub mod schedule;
+mod util;
 
 #[derive(Error, Debug)]
 pub enum AuthErrors {

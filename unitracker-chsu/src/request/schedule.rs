@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use chrono::{NaiveDate, NaiveDateTime};
 use reqwest::{ClientBuilder, Method, StatusCode};
 use url::Url;
@@ -6,40 +7,18 @@ use crate::model::schedule::{Class};
 use crate::model::teachers::Teacher;
 use crate::request::constants::{BASE_URL, TIMETABLE};
 use crate::request::RequestErrors;
+use crate::request::util::{call_with_url, check_result};
 
 pub async fn get_school_week(bearer: &str, date: NaiveDate) -> Result<usize, RequestErrors> {
-    // println!("{}", date.format("%d.%m.%Y").to_string());
     let week_url = BASE_URL.to_owned() + TIMETABLE + "/numweek/" + &date.format("%d.%m.%Y").to_string() + "/";
-    let client = ClientBuilder::new().user_agent("").build()?;
-    let mut response = client
-        .request(Method::GET, week_url)
-        .header("content-type", "application/json")
-        .bearer_auth(bearer)
-        .send()
-        .await?;
-    let response_result = match response.status() {
-        StatusCode::OK => Ok(response.text().await?.parse::<usize>()?),
-        StatusCode::UNAUTHORIZED => Err(RequestErrors::InvalidBearerToken),
-        _ => Err(RequestErrors::UnknownError)
-    };
-    response_result
+    let response = call_with_url(&week_url, bearer).await?;
+    check_result(response).await
 }
 
 pub async fn get_schedule(bearer: &str, schedule_request: ScheduleRequest) -> Result<Vec<Class>, RequestErrors> {
-    let schedule_url: Url = schedule_request.into();
-    let client = ClientBuilder::new().user_agent("").build()?;
-    let mut response = client
-        .request(Method::GET, schedule_url)
-        .header("content-type", "application/json")
-        .bearer_auth(bearer)
-        .send()
-        .await?;
-    let response_result = match response.status() {
-        StatusCode::OK => Ok(response.json().await?),
-        StatusCode::UNAUTHORIZED => Err(RequestErrors::InvalidBearerToken),
-        _ => Err(RequestErrors::UnknownError)
-    };
-    response_result
+    let schedule_url: String = schedule_request.into();
+    let response = call_with_url(&schedule_url, bearer).await?;
+    check_result(response).await
 }
 
 pub enum ScheduleType {
@@ -87,6 +66,68 @@ impl ScheduleRequestBuilder {
             end: self.end.unwrap(),
             schedule_type: self.schedule_type.unwrap()
         }
+    }
+}
+
+impl Display for ScheduleRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut base = BASE_URL.to_owned() + TIMETABLE;
+        match &self.schedule_type {
+            ScheduleType::Full => {
+                base += &("/event/from/".to_owned()
+                    + &self.start.format("%d.%m.%Y").to_string()
+                    + "/to/"
+                    + &self.end.format("%d.%m.%Y").to_string())
+            }
+            ScheduleType::Group(g) => {
+                base += &("/from/".to_owned()
+                    + &self.start.format("%d.%m.%Y").to_string()
+                    + "/to/"
+                    + &self.end.format("%d.%m.%Y").to_string()
+                    + "/groupId/"
+                    + &g.id.to_string())
+            }
+            ScheduleType::Lecturer(l) => {
+                base += &("/from/".to_owned()
+                    + &self.start.format("%d.%m.%Y").to_string()
+                    + "/to/"
+                    + &self.end.format("%d.%m.%Y").to_string()
+                    + "/lecturerId/"
+                    + &l.id.to_string())
+            }
+        }
+        write!(f, "{}", base)
+    }
+}
+
+impl Into<String> for ScheduleRequest {
+    fn into(self) -> String {
+        let mut base = BASE_URL.to_owned() + TIMETABLE;
+        match self.schedule_type {
+            ScheduleType::Full => {
+                base += &("/event/from/".to_owned()
+                    + &self.start.format("%d.%m.%Y").to_string()
+                    + "/to/"
+                    + &self.end.format("%d.%m.%Y").to_string())
+            }
+            ScheduleType::Group(g) => {
+                base += &("/from/".to_owned()
+                    + &self.start.format("%d.%m.%Y").to_string()
+                    + "/to/"
+                    + &self.end.format("%d.%m.%Y").to_string()
+                    + "/groupId/"
+                    + &g.id.to_string())
+            }
+            ScheduleType::Lecturer(l) => {
+                base += &("/from/".to_owned()
+                    + &self.start.format("%d.%m.%Y").to_string()
+                    + "/to/"
+                    + &self.end.format("%d.%m.%Y").to_string()
+                    + "/lecturerId/"
+                    + &l.id.to_string())
+            }
+        }
+        base
     }
 }
 

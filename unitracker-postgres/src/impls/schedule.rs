@@ -1,11 +1,6 @@
 use crate::database::Database;
 use eyre::{Result, WrapErr};
-use sqlx::query::Query;
-use sqlx::QueryBuilder;
-use crate::models::auditoriums::DbAuditorium;
-use crate::models::groups::DbGroup;
 use crate::models::schedule::DbSchedule;
-use crate::models::teachers::DbTeacher;
 
 impl Database {
     pub async fn select_schedule(&self, id: i64) -> Result<Option<DbSchedule>> {
