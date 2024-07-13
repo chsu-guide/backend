@@ -1,0 +1,18 @@
+services:
+  psql:
+    container_name: unitracker-db
+    image: postgres:alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=unitracker
+      - POSTGRES_PASSWORD=aboba
+      - POSTGRES_DB=unitracker-db
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker-volume/psql:/var/lib/postgresql/data
+    networks:
+      - unitracker-back
+networks:
+  unitracker-back:
+    driver: bridge
