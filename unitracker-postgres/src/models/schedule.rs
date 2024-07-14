@@ -24,7 +24,7 @@ impl From<ApiSchedule> for DbSchedule {
             },
             start_time: value.start_time.parse().unwrap(),
             end_time: value.end_time.parse().unwrap(),
-            lesson_type: value.lessontype.unwrap().into_boxed_str(),
+            lesson_type: value.lessontype.unwrap_or_default().into_boxed_str(),
             lesson_type_abbr: value.abbrlessontype,
             discipline_id: value.discipline.id,
         }

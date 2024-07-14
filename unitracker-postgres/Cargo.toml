@@ -12,3 +12,4 @@ tokio = "1.36.0"
 chrono = "0.4.34"
 eyre = "0.6.12"
 unitracker_chsu = { path = "../unitracker-chsu" }
+clokwerk = "0.4.0"

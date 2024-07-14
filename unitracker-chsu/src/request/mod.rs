@@ -11,6 +11,14 @@ pub mod schedule;
 mod util;
 
 #[derive(Error, Debug)]
+pub enum SharedErrors {
+    #[error("Auth error:")]
+    AuthError(#[from] AuthErrors),
+    #[error("Request error:")]
+    RequestError(#[from] RequestErrors),
+}
+
+#[derive(Error, Debug)]
 pub enum AuthErrors {
     #[error("Request body is empty")]
     EmptyRequestBody,

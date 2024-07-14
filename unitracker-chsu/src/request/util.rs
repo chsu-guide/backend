@@ -1,12 +1,11 @@
 use std::future::Future;
-use reqwest::{ClientBuilder, Error, Method, Response, StatusCode};
+use reqwest::{Client, Error, Method, Response, StatusCode};
 use serde::de::DeserializeOwned;
 use crate::request::RequestErrors;
 
-pub fn call_with_url(url: &str, bearer: &str) -> impl Future<Output = Result<Response, Error>> {
-    let client = ClientBuilder::new().user_agent("").build();
+pub fn call_with_url(client: &mut Client, url: &str, bearer: &str) -> impl Future<Output = Result<Response, Error>> {
+    // let client = ClientBuilder::new().user_agent("").build().unwrap();
     let mut response = client
-        .unwrap()
         .request(Method::GET, url)
         .header("content-type", "application/json")
         .bearer_auth(bearer)

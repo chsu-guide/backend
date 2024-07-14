@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use chrono::{NaiveDate, NaiveDateTime};
-use reqwest::{ClientBuilder, Method, StatusCode};
+use reqwest::{Client, ClientBuilder, Method, StatusCode};
 use url::Url;
 use crate::model::groups::Group;
 use crate::model::schedule::{Class};
@@ -9,15 +9,15 @@ use crate::request::constants::{BASE_URL, TIMETABLE};
 use crate::request::RequestErrors;
 use crate::request::util::{call_with_url, check_result};
 
-pub async fn get_school_week(bearer: &str, date: NaiveDate) -> Result<usize, RequestErrors> {
+pub async fn get_school_week(client: &mut Client, bearer: &str, date: NaiveDate) -> Result<usize, RequestErrors> {
     let week_url = BASE_URL.to_owned() + TIMETABLE + "/numweek/" + &date.format("%d.%m.%Y").to_string() + "/";
-    let response = call_with_url(&week_url, bearer).await?;
+    let response = call_with_url(client, &week_url, bearer).await?;
     check_result(response).await
 }
 
-pub async fn get_schedule(bearer: &str, schedule_request: ScheduleRequest) -> Result<Vec<Class>, RequestErrors> {
+pub async fn get_schedule(client: &mut Client, bearer: &str, schedule_request: ScheduleRequest) -> Result<Vec<Class>, RequestErrors> {
     let schedule_url: String = schedule_request.into();
-    let response = call_with_url(&schedule_url, bearer).await?;
+    let response = call_with_url(client, &schedule_url, bearer).await?;
     check_result(response).await
 }
 
