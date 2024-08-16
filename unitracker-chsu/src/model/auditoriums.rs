@@ -7,8 +7,10 @@ pub struct Auditorium {
     pub id: i64,
     pub name: String,
     pub number: String,
-    pub build_name: String,
-    pub build_id: i64,
+    #[serde(alias = "buildName")]
+    pub building_name: String,
+    #[serde(alias = "buildId")]
+    pub building_id: i64,
     pub height: f32,
     pub length: f32,
     pub width: f32,

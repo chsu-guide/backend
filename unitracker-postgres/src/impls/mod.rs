@@ -1,5 +1,14 @@
-pub mod auditoriums;
-mod buildings;
-mod groups;
-mod teachers;
+pub mod auditorium;
+mod building;
+mod chair;
+mod discipline;
+mod faculty;
+mod group;
 mod schedule;
+mod teacher;
+// mod buildings;
+// mod groups;
+// mod teachers;
+// mod schedule;
+// mod discipline;
+// mod auditorium;

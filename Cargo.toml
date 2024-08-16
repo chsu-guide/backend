@@ -12,6 +12,6 @@ unitracker-postgres = { path = "./unitracker-postgres"}
 tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
 reqwest = "0.12.5"
 chrono = "0.4.34"
-sqlx = { version = "0.7.3", features = ["sqlx-macros", "postgres", "runtime-tokio", "time"] }
+sqlx = { version = "0.8.0", features = ["sqlx-macros", "postgres", "runtime-tokio", "time"] }
 dotenv = "0.15.0"
 clokwerk = "0.4.0"

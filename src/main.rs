@@ -4,9 +4,9 @@ use std::env;
 use chrono::{NaiveDate, TimeZone, Utc};
 use dotenv;
 use reqwest::ClientBuilder;
+use unitracker_chsu::request::*;
+use unitracker_chsu::request::auditoriums::get_auditoriums;
 use unitracker_chsu::request::auth::get_auth;
-use unitracker_chsu::request::{RequestErrors, SharedErrors};
-use unitracker_chsu::request::schedule::{get_schedule, ScheduleRequestBuilder, ScheduleType};
 use unitracker_postgres::database::Database;
 
 #[tokio::main]
@@ -21,27 +21,24 @@ async fn main() -> Result<(), RequestErrors> {
 
     let db = Database::new(&db_url).unwrap();
 
-    let schedule_request = ScheduleRequestBuilder::new()
-        .start(NaiveDate::from_ymd_opt(2024, 4, 1).unwrap())
-        .end(NaiveDate::from_ymd_opt(2024, 4, 30).unwrap())
-        .schedule_type(ScheduleType::Full)
-        .build();
-    let mut group: i64 = 0;
-    if let Ok(schedule) = get_schedule(&mut client, &auth.data, schedule_request).await {
-        for class in schedule {
-            let db_class = class.clone().into();
-            group = class.groups.first().unwrap().id;
-            db.insert_schedule(db_class,
-                               class.id,
-                               &class.lecturers.unwrap().iter().map(|x| x.id).collect::<Vec<i64>>(),
-                               &class.groups.iter().map(|x| x.id).collect::<Vec<i64>>())
-                .await
-                .expect("TODO: panic message");
-        }
-    }
+    let auditoriums = get_auditoriums(&mut client, &auth.data).await.unwrap();
 
-    let db_sched = db.select_schedule(group).await;
-    println!("{db_sched:?}");
+    let funky = auditoriums.iter().count();
+    println!("{funky:?}");
+
+    let max_id = auditoriums.clone().iter().map(|aud| aud.id).max().unwrap();
+    println!("{max_id}");
+
+    db.insert_auditorium_many(auditoriums).await.unwrap();
+    //
+    // for aud in auditoriums {
+    //     db.insert_auditorium(aud).await.unwrap();
+    // }
+
+    let db_auds = db.select_auditorium(max_id).await.unwrap();
+
+    println!("{db_auds:?}");
+
     Ok(())
 
 }

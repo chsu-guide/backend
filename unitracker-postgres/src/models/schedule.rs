@@ -1,5 +1,6 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use unitracker_chsu::model::schedule::Class as ApiSchedule;
+use unitracker_chsu::model::disciplines::Discipline;
+use unitracker_chsu::model::schedule::Schedule as ApiSchedule;
 
 #[derive(Debug)]
 pub struct DbSchedule {

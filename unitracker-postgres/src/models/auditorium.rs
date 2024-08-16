@@ -19,7 +19,7 @@ impl From<ApiAuditorium> for DbAuditorium {
             height: value.height,
             length: value.length,
             width: value.width,
-            building_id: Some(value.build_id),
+            building_id: Some(value.building_id),
         }
     }
 }

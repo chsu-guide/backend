@@ -3,7 +3,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use reqwest::{Client, ClientBuilder, Method, StatusCode};
 use url::Url;
 use crate::model::groups::Group;
-use crate::model::schedule::{Class};
+use crate::model::schedule::{Schedule};
 use crate::model::teachers::Teacher;
 use crate::request::constants::{BASE_URL, TIMETABLE};
 use crate::request::RequestErrors;
@@ -15,7 +15,7 @@ pub async fn get_school_week(client: &mut Client, bearer: &str, date: NaiveDate)
     check_result(response).await
 }
 
-pub async fn get_schedule(client: &mut Client, bearer: &str, schedule_request: ScheduleRequest) -> Result<Vec<Class>, RequestErrors> {
+pub async fn get_schedule(client: &mut Client, bearer: &str, schedule_request: ScheduleRequest) -> Result<Vec<Schedule>, RequestErrors> {
     let schedule_url: String = schedule_request.into();
     let response = call_with_url(client, &schedule_url, bearer).await?;
     check_result(response).await

@@ -5,7 +5,7 @@ use crate::model::disciplines::Discipline;
 
 #[derive(Default, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Class {
+pub struct Schedule {
     pub id: i64,
     /// Date formatted as dd.mm.YYYY
     pub date_event: String,
