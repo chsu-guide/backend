@@ -1,4 +1,4 @@
-workspace = { members = ["unitracker-chsu", "unitracker-postgres"] }
+workspace = { members = ["unitracker-chsu"] }
 [package]
 name = "unitracker-backend"
 version = "0.1.0"
@@ -8,10 +8,10 @@ edition = "2021"
 
 [dependencies]
 unitracker_chsu = { path = "./unitracker-chsu" }
-unitracker-postgres = { path = "./unitracker-postgres"}
 tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
 reqwest = "0.12.5"
 chrono = "0.4.34"
-sqlx = { version = "0.8.0", features = ["sqlx-macros", "postgres", "runtime-tokio", "time"] }
 dotenv = "0.15.0"
 clokwerk = "0.4.0"
+# ratatui = "0.29.0"
+comfy-table = "7.2.1"

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub const BASE_URL: &str = "http://api.chsu.ru/api";
 pub const AUTH_VALID: &str = "/auth/valid";
 pub const AUTH_SIGNIN: &str = "/auth/signin";

@@ -1,44 +1,38 @@
-mod update;
 
-use std::env;
-use chrono::{NaiveDate, TimeZone, Utc};
-use dotenv;
-use reqwest::ClientBuilder;
-use unitracker_chsu::request::*;
-use unitracker_chsu::request::auditoriums::get_auditoriums;
-use unitracker_chsu::request::auth::get_auth;
-use unitracker_postgres::database::Database;
+use chrono::Local;
+use comfy_table::modifiers::UTF8_ROUND_CORNERS;
+use comfy_table::presets::UTF8_FULL;
+use comfy_table::Table;
+use unitracker_chsu::request::schedule::ScheduleType::{self};
+use unitracker_chsu::request::schedule::{get_schedule, ScheduleRequestBuilder};
+use unitracker_chsu::global_init;
 
+const GROUP_ID: u64 = 1739582424505775711;
 #[tokio::main]
-async fn main() -> Result<(), RequestErrors> {
-    dotenv::dotenv().expect("TODO: panic message");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    global_init().await;
+    let req = ScheduleRequestBuilder::new()
+        .start(Local::now().date_naive())
+        .end(Local::now().date_naive())
+        .schedule_type(ScheduleType::Group(GROUP_ID))
+        .build();
 
-    let mut client = ClientBuilder::new().user_agent("").build()?;
+    let schedule = get_schedule(req).await?;
 
-    let auth = get_auth(&mut client).await.unwrap();
+    let mut table = Table::new();
+    table
+        .set_header(vec!["Дата", "Время", "Предмет"])
+        .load_preset(UTF8_FULL)
+        .apply_modifier(UTF8_ROUND_CORNERS);
+    for item in schedule {
+        table.add_row(vec![
+            item.date_event,
+            format!("{}-{}", item.start_time, item.end_time),
+            item.discipline.title,
+        ]);
+    }
 
-    let db_url = env::var("DATABASE_URL").unwrap();
-
-    let db = Database::new(&db_url).unwrap();
-
-    let auditoriums = get_auditoriums(&mut client, &auth.data).await.unwrap();
-
-    let funky = auditoriums.iter().count();
-    println!("{funky:?}");
-
-    let max_id = auditoriums.clone().iter().map(|aud| aud.id).max().unwrap();
-    println!("{max_id}");
-
-    db.insert_auditorium_many(auditoriums).await.unwrap();
-    //
-    // for aud in auditoriums {
-    //     db.insert_auditorium(aud).await.unwrap();
-    // }
-
-    let db_auds = db.select_auditorium(max_id).await.unwrap();
-
-    println!("{db_auds:?}");
+    println!("{table}");
 
     Ok(())
-
 }

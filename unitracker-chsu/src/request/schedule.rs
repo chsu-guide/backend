@@ -1,41 +1,41 @@
-use std::fmt::{Display, Formatter};
-use chrono::{NaiveDate, NaiveDateTime};
-use reqwest::{Client, ClientBuilder, Method, StatusCode};
-use url::Url;
-use crate::model::groups::Group;
-use crate::model::schedule::{Schedule};
-use crate::model::teachers::Teacher;
+use crate::model::schedule::Schedule;
 use crate::request::constants::{BASE_URL, TIMETABLE};
-use crate::request::RequestErrors;
 use crate::request::util::{call_with_url, check_result};
+use crate::request::RequestErrors;
+use chrono::NaiveDate;
+use std::fmt::{Display, Formatter};
+use url::Url;
 
-pub async fn get_school_week(client: &mut Client, bearer: &str, date: NaiveDate) -> Result<usize, RequestErrors> {
-    let week_url = BASE_URL.to_owned() + TIMETABLE + "/numweek/" + &date.format("%d.%m.%Y").to_string() + "/";
-    let response = call_with_url(client, &week_url, bearer).await?;
+pub async fn get_school_week(date: NaiveDate) -> Result<usize, RequestErrors> {
+    let week_url =
+        BASE_URL.to_owned() + TIMETABLE + "/numweek/" + &date.format("%d.%m.%Y").to_string() + "/";
+    let response = call_with_url(&week_url).await?;
     check_result(response).await
 }
 
-pub async fn get_schedule(client: &mut Client, bearer: &str, schedule_request: ScheduleRequest) -> Result<Vec<Schedule>, RequestErrors> {
+pub async fn get_schedule(
+    schedule_request: ScheduleRequest,
+) -> Result<Vec<Schedule>, RequestErrors> {
     let schedule_url: String = schedule_request.into();
-    let response = call_with_url(client, &schedule_url, bearer).await?;
+    let response = call_with_url(&schedule_url).await?;
     check_result(response).await
 }
 
 pub enum ScheduleType {
     Full,
-    Group(Group),
-    Lecturer(Teacher)
+    Group(u64),
+    Lecturer(u64),
 }
 
 pub struct ScheduleRequest {
     start: NaiveDate,
     end: NaiveDate,
-    schedule_type: ScheduleType
+    schedule_type: ScheduleType,
 }
 pub struct ScheduleRequestBuilder {
     start: Option<NaiveDate>,
     end: Option<NaiveDate>,
-    schedule_type: Option<ScheduleType>
+    schedule_type: Option<ScheduleType>,
 }
 impl ScheduleRequestBuilder {
     pub fn new() -> Self {
@@ -60,11 +60,11 @@ impl ScheduleRequestBuilder {
         self.schedule_type = Some(schedule_type);
         self
     }
-    pub fn build(mut self) -> ScheduleRequest {
+    pub fn build(self) -> ScheduleRequest {
         ScheduleRequest {
             start: self.start.unwrap(),
             end: self.end.unwrap(),
-            schedule_type: self.schedule_type.unwrap()
+            schedule_type: self.schedule_type.unwrap(),
         }
     }
 }
@@ -85,7 +85,7 @@ impl Display for ScheduleRequest {
                     + "/to/"
                     + &self.end.format("%d.%m.%Y").to_string()
                     + "/groupId/"
-                    + &g.id.to_string())
+                    + &g.to_string())
             }
             ScheduleType::Lecturer(l) => {
                 base += &("/from/".to_owned()
@@ -93,7 +93,7 @@ impl Display for ScheduleRequest {
                     + "/to/"
                     + &self.end.format("%d.%m.%Y").to_string()
                     + "/lecturerId/"
-                    + &l.id.to_string())
+                    + &l.to_string())
             }
         }
         write!(f, "{}", base)
@@ -116,7 +116,7 @@ impl Into<String> for ScheduleRequest {
                     + "/to/"
                     + &self.end.format("%d.%m.%Y").to_string()
                     + "/groupId/"
-                    + &g.id.to_string())
+                    + &g.to_string())
             }
             ScheduleType::Lecturer(l) => {
                 base += &("/from/".to_owned()
@@ -124,7 +124,7 @@ impl Into<String> for ScheduleRequest {
                     + "/to/"
                     + &self.end.format("%d.%m.%Y").to_string()
                     + "/lecturerId/"
-                    + &l.id.to_string())
+                    + &l.to_string())
             }
         }
         base
@@ -147,7 +147,7 @@ impl Into<Url> for ScheduleRequest {
                     + "/to/"
                     + &self.end.format("%d.%m.%Y").to_string()
                     + "/groupId/"
-                    + &g.id.to_string())
+                    + &g.to_string())
             }
             ScheduleType::Lecturer(l) => {
                 base += &("/from/".to_owned()
@@ -155,7 +155,7 @@ impl Into<Url> for ScheduleRequest {
                     + "/to/"
                     + &self.end.format("%d.%m.%Y").to_string()
                     + "/lecturerId/"
-                    + &l.id.to_string())
+                    + &l.to_string())
             }
         }
         Url::parse(&base).unwrap()

@@ -1,13 +1,12 @@
-use std::string::ParseError;
 use thiserror::Error;
 
 pub mod auditoriums;
-mod constants;
 pub mod auth;
-pub mod teachers;
-pub mod groups;
 pub mod buildings;
+mod constants;
+pub mod groups;
 pub mod schedule;
+pub mod teachers;
 mod util;
 
 #[derive(Error, Debug)]
@@ -38,5 +37,5 @@ pub enum RequestErrors {
     #[error("Generic reqwest error, your Bearer token is probably invalid")]
     ReqwestError(#[from] reqwest::Error),
     #[error("Parsing error")]
-    ParsingError(#[from] std::num::ParseIntError)
+    ParsingError(#[from] std::num::ParseIntError),
 }

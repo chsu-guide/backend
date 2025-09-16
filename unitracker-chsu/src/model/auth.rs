@@ -1,8 +1,6 @@
-use dotenv::dotenv;
-use std::env;
 use serde_derive;
 use serde_derive::{Deserialize, Serialize};
-use serde_json;
+use std::env;
 
 /// Body of an [`get_auth()`](crate::request::auth::get_auth) request
 #[derive(Serialize, Deserialize)]
@@ -13,8 +11,6 @@ pub struct AuthRequest {
 impl AuthRequest {
     /// Build new [`AuthRequest`] based on login and password in env vars
     pub fn new() -> Self {
-        dotenv::dotenv().ok();
-
         let username = match env::var("LOGIN") {
             Ok(u) => u,
             Err(e) => panic!("username: {}", e),
