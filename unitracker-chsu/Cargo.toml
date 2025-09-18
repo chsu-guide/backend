@@ -1,5 +1,5 @@
 [package]
-name = "unitracker_chsu"
+name = "unitracker-chsu"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,9 +7,7 @@ edition = "2021"
 
 [dependencies]
 serde = "1.0.*"
-axum = "0.7.*"
 http-body-util = "0.1.0"
-tokio = "1.36.0"
 serde_derive = "1.0.196"
 url = "2.5.0"
 pin-project-lite = "0.2.13"
@@ -22,3 +20,4 @@ chrono = "0.4.33"
 dotenv = "0.15.0"
 thiserror = "1.0.*"
 hyper = { version = "1.4.1", features = ["full"] }
+tokio.workspace = true
