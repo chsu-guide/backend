@@ -5,10 +5,10 @@ services:
     restart: unless-stopped
     environment:
       - POSTGRES_USER=unitracker
-      - POSTGRES_PASSWORD=aboba
+      - POSTGRES_PASSWORD=unitracker
       - POSTGRES_DB=unitracker-db
     ports:
-      - 5432:5432
+      - 3535:5432
     volumes:
       - ./docker-volume/psql:/var/lib/postgresql/data
     networks:

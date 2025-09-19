@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+unitracker-chsu.path = "../unitracker-chsu"
+chrono.workspace = true
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "chrono", "postgres"] }
+eyre.workspace = true
+futures.workspace = true
