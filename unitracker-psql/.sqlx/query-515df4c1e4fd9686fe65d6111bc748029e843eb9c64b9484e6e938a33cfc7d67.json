@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO building\n            (id, name)\n            VALUES ($1, $2)\n            ON CONFLICT (id) DO\n            UPDATE SET\n            id = $1,\n            name = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "515df4c1e4fd9686fe65d6111bc748029e843eb9c64b9484e6e938a33cfc7d67"
+}

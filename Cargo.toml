@@ -1,8 +1,13 @@
 [workspace]
-members = [ "unitracker-backend","unitracker-chsu", "unitracker-cli", "unitracker-psql", "unitracker-server"]
+members = [ "unitracker-backend", "unitracker-chsu", "unitracker-cli", "unitracker-psql", "unitracker-server"]
 resolver = "3"
 
 [workspace.dependencies]
+unitracker-backend = { path = "./unitracker-backend" }
+unitracker-chsu = { path = "./unitracker-chsu" }
+unitracker-cli = { path = "./unitracker-cli" }
+unitracker-psql = { path = "./unitracker-psql"}
+unitracker-server = { path = "./unitracker-server"}
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 reqwest = { version = "0.12.5", features = ["json"] }
 chrono = "0.4.34"

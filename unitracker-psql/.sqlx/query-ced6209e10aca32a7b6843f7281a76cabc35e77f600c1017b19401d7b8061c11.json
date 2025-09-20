@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id, last_name, first_name, middle_name\n        FROM\n            teacher\n        WHERE\n            id = $1\n        ",
+  "query": "\n            SELECT\n                id, name, number, building_id\n            FROM auditorium\n            WHERE name ~ $1\n            ",
   "describe": {
     "columns": [
       {
@@ -10,23 +10,23 @@
       },
       {
         "ordinal": 1,
-        "name": "last_name",
+        "name": "name",
         "type_info": "Text"
       },
       {
         "ordinal": 2,
-        "name": "first_name",
+        "name": "number",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
-        "name": "middle_name",
-        "type_info": "Text"
+        "name": "building_id",
+        "type_info": "Int8"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8"
+        "Text"
       ]
     },
     "nullable": [
@@ -36,5 +36,5 @@
       true
     ]
   },
-  "hash": "25f65ef227826be1efb4718fa3447bc2bc30db849c993a804d746d76d4ad2701"
+  "hash": "ced6209e10aca32a7b6843f7281a76cabc35e77f600c1017b19401d7b8061c11"
 }

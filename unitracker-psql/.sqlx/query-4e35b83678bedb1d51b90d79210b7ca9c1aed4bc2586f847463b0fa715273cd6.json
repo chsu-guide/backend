@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO teacher\n            (id, last_name, first_name, middle_name)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (id) DO\n            NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4e35b83678bedb1d51b90d79210b7ca9c1aed4bc2586f847463b0fa715273cd6"
+}

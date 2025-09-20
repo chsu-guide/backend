@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id, title\n        FROM\n            building\n        WHERE\n            id = $1\n        ",
+  "query": "\n            SELECT id, name\n            FROM building\n            WHERE name ~ $1\n            ",
   "describe": {
     "columns": [
       {
@@ -10,13 +10,13 @@
       },
       {
         "ordinal": 1,
-        "name": "title",
+        "name": "name",
         "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8"
+        "Text"
       ]
     },
     "nullable": [
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "05b19f466186db10e5dfad9080357dab403b332c71efe242b80cc5c8dd6d4021"
+  "hash": "60c858f7abb7a78a318cf518c29bdc6582d049a5309398137e12ca0687a5bf34"
 }

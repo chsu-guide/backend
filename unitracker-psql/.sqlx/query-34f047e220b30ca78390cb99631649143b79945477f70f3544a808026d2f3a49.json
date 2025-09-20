@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id, request_date, class_date, start_time, end_time, lesson_type, lesson_type_abbr, discipline_id\n        FROM\n            schedule\n        WHERE\n            id = $1\n        ",
+  "query": "\n            SELECT id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id\n            FROM schedule\n            WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -10,36 +10,31 @@
       },
       {
         "ordinal": 1,
-        "name": "request_date",
-        "type_info": "Date"
+        "name": "created_at",
+        "type_info": "Timestamp"
       },
       {
         "ordinal": 2,
-        "name": "class_date",
-        "type_info": "Date"
+        "name": "start_time",
+        "type_info": "Timestamp"
       },
       {
         "ordinal": 3,
-        "name": "start_time",
-        "type_info": "Time"
+        "name": "end_time",
+        "type_info": "Timestamp"
       },
       {
         "ordinal": 4,
-        "name": "end_time",
-        "type_info": "Time"
-      },
-      {
-        "ordinal": 5,
         "name": "lesson_type",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
-        "name": "lesson_type_abbr",
+        "ordinal": 5,
+        "name": "lesson_type_abbreviated",
         "type_info": "Text"
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "discipline_id",
         "type_info": "Int8"
       }
@@ -55,10 +50,9 @@
       false,
       false,
       false,
-      false,
       true,
       false
     ]
   },
-  "hash": "4c4fb9460852eb7e4ddfa00bb785b8d1c0396f971c4e395831beed19bc38c9c2"
+  "hash": "34f047e220b30ca78390cb99631649143b79945477f70f3544a808026d2f3a49"
 }

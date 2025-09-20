@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO student_group\n            (id, name, course, faculty_id, chair_id)\n            VALUES ($1, $2, $3, $4, $5)\n            ON CONFLICT (id) DO\n            NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Int2",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "238a9840df685468754757ff75fcd56f3eb8ff5cd6763b2a63260ba9579aecd3"
+}
