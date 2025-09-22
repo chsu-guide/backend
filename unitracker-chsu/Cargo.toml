@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = "1.0.*"
 http-body-util = "0.1.0"
 serde_derive = "1.0.196"
 url = "2.5.0"
@@ -22,3 +21,5 @@ hyper = { version = "1.4.1", features = ["full"] }
 tokio.workspace = true
 reqwest.workspace = true
 futures.workspace = true
+
+serde.workspace = true
