@@ -7,6 +7,5 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 reqwest = { version = "0.12.5", features = ["json"] }
 chrono = "0.4.34"
 dotenv = "0.15.0"
-axum = "0.8.4"
 eyre = "0.6"
 futures = "0.3"
