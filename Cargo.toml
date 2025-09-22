@@ -10,7 +10,8 @@ unitracker-psql = { path = "./unitracker-psql"}
 unitracker-server = { path = "./unitracker-server"}
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 reqwest = { version = "0.12.5", features = ["json"] }
-chrono = "0.4.34"
+chrono = { version = "0.4.34", features = ["serde"] }
 dotenv = "0.15.0"
 eyre = "0.6"
 futures = "0.3"
+serde = {version = "1.0.*", features = ["derive"]}
