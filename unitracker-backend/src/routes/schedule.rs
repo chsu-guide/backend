@@ -2,12 +2,8 @@ use axum::extract::Query;
 use chrono::NaiveDateTime;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
-#[serde(untagged)]
-pub enum IdOrName {
-    Id(i64),
-    Name(String),
-}
+use crate::util::types::IdOrName;
+
 #[derive(Deserialize)]
 struct ScheduleQuery {
     group: IdOrName,
@@ -15,9 +11,7 @@ struct ScheduleQuery {
     end: NaiveDateTime,
 }
 
-async fn get_schedule(Query(schedule): Query<ScheduleQuery>) {
-    todo!()
-}
+async fn get_schedule(Query(schedule): Query<ScheduleQuery>) {}
 
 #[derive(Deserialize)]
 struct TeacherScheduleQuery {

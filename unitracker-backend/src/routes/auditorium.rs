@@ -1,7 +1,8 @@
+use axum::extract::Query;
 use chrono::NaiveDateTime;
 use serde::Deserialize;
 
-use crate::routes::schedule::IdOrName;
+use crate::util::types::IdOrName;
 
 #[derive(Deserialize)]
 struct AuditoriumQuery {
