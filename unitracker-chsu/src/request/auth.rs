@@ -1,12 +1,10 @@
-use crate::get_client;
 use crate::model::auth::*;
 use crate::request::constants::{AUTH_SIGNIN, BASE_URL};
 use crate::request::AuthErrors;
-use reqwest::{Body, Method, StatusCode};
+use reqwest::{Body, Client, Method, StatusCode};
 use serde_json;
 
-pub async fn get_auth() -> Result<AuthResponse, AuthErrors> {
-    let client = get_client();
+pub async fn get_auth(client: &Client) -> Result<AuthResponse, AuthErrors> {
     let auth_request = AuthRequest::new();
     let auth_request_de: Body = match serde_json::to_string(&auth_request) {
         Ok(auth) => auth.into(),

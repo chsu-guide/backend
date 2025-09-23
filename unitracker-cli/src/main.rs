@@ -5,12 +5,9 @@ use tokio;
 
 use eyre::Result;
 use unitracker_chsu::{
-    global_init,
+    ChsuClient,
     model::schedule::Schedule,
-    request::{
-        self,
-        schedule::{ScheduleRequestBuilder, get_schedule},
-    },
+    request::{self, schedule::ScheduleRequestBuilder},
 };
 
 #[derive(Parser)]
@@ -25,7 +22,6 @@ const GROUP_ID: u64 = 1739582424505775711;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    global_init().await;
     let args = Args::parse();
     let from = match args.from {
         Some(ref string) => string.clone().parse()?,
@@ -44,10 +40,11 @@ async fn main() -> Result<()> {
         .end(to)
         .schedule_type(request::schedule::ScheduleType::Group(GROUP_ID))
         .build();
-    let data = get_schedule(request).await?;
-    let table = generate_table(&data);
+    let client = ChsuClient::new().await;
+    let data = client.get_schedule(request).await.unwrap();
+    // let table = generate_table(&client.unwrap());
 
-    println!("{table}");
+    // println!("{table}");
     Ok(())
 }
 
