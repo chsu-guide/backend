@@ -1,25 +1,24 @@
-use crate::model::schedule::Schedule;
-use crate::request::constants::{BASE_URL, TIMETABLE};
-use crate::request::util::{check_result, format_date};
-use crate::request::RequestErrors;
 use crate::ChsuClient;
+use crate::model::schedule::Schedule;
+use crate::request::RequestErrors;
+use crate::request::constants::TIMETABLE_URL;
+use crate::request::util::format_date;
+use crate::utils::response::ToConcrete;
 use chrono::NaiveDate;
 use std::fmt::{Display, Formatter};
 use url::Url;
 
 impl ChsuClient {
     pub async fn get_school_week(&self, date: NaiveDate) -> Result<usize, RequestErrors> {
-        let week_url = format!("{}{}/numweek/{}/", BASE_URL, TIMETABLE, format_date(date));
-        let response = self.call_with_url(&week_url).await?;
-        check_result(response).await
+        let week_url = format!("{}/numweek/{}/", TIMETABLE_URL, format_date(date));
+        self.call_with_url(&week_url).to_concrete().await
     }
     pub async fn get_schedule(
         &self,
         schedule_request: ScheduleRequest,
     ) -> Result<Vec<Schedule>, RequestErrors> {
         let schedule_url: String = schedule_request.to_string();
-        let response = self.call_with_url(&schedule_url).await?;
-        check_result(response).await
+        self.call_with_url(&schedule_url).to_concrete().await
     }
 }
 
@@ -83,13 +82,13 @@ impl From<&ScheduleRequest> for String {
         let end_fmt = format_date(val.end);
         let base = match &val.schedule_type {
             ScheduleType::Full => {
-                format!("{BASE_URL}{TIMETABLE}/event/from/{start_fmt}/to/{end_fmt}")
+                format!("{TIMETABLE_URL}/event/from/{start_fmt}/to/{end_fmt}")
             }
             ScheduleType::Group(g) => {
-                format!("{BASE_URL}{TIMETABLE}/from/{start_fmt}/to/{end_fmt}/groupId/{g}")
+                format!("{TIMETABLE_URL}/from/{start_fmt}/to/{end_fmt}/groupId/{g}")
             }
             ScheduleType::Lecturer(l) => {
-                format!("{BASE_URL}{TIMETABLE}/from/{start_fmt}/to/{end_fmt}/lecturerId/{l}")
+                format!("{TIMETABLE_URL}/from/{start_fmt}/to/{end_fmt}/lecturerId/{l}")
             }
         };
         base

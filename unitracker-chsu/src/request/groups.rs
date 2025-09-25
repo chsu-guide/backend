@@ -1,13 +1,11 @@
-use crate::model::groups::GroupList;
-use crate::request::constants::{BASE_URL, STUDENT_GROUP};
-use crate::request::util::check_result;
-use crate::request::RequestErrors;
 use crate::ChsuClient;
+use crate::model::groups::GroupList;
+use crate::request::RequestErrors;
+use crate::request::constants::STUDENT_GROUP_URL;
+use crate::utils::response::ToConcrete;
 
 impl ChsuClient {
     pub async fn get_groups(&self) -> Result<GroupList, RequestErrors> {
-        let group_url = BASE_URL.to_owned() + STUDENT_GROUP;
-        let response = self.call_with_url(&group_url).await?;
-        check_result(response).await
+        self.call_with_url(STUDENT_GROUP_URL).to_concrete().await
     }
 }

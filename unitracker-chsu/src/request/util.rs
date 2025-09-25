@@ -1,29 +1,20 @@
-use crate::{request::RequestErrors, ChsuClient};
+use crate::ChsuClient;
 use chrono::{
-    format::{DelayedFormat, StrftimeItems},
     NaiveDate,
+    format::{DelayedFormat, StrftimeItems},
 };
-use reqwest::{Error, Method, Response, StatusCode};
-use serde::de::DeserializeOwned;
+use reqwest::{Error, Method, Response};
 use std::future::Future;
 
 impl ChsuClient {
     pub fn call_with_url(&self, url: &str) -> impl Future<Output = Result<Response, Error>> {
         let response = self
-            ._inner
+            .inner
             .request(Method::GET, url)
-            .header("content-type", "application/json")
-            .bearer_auth(&self._config)
-            .send();
-        response
-    }
-}
-
-pub async fn check_result<T: DeserializeOwned>(response: Response) -> Result<T, RequestErrors> {
-    match response.status() {
-        StatusCode::OK => Ok(response.json().await?),
-        StatusCode::UNAUTHORIZED => Err(RequestErrors::InvalidBearerToken),
-        _ => Err(RequestErrors::UnknownError),
+            .header("authorization", format!("Bearer {}", self.config))
+            .build()
+            .unwrap();
+        self.inner.execute(response)
     }
 }
 

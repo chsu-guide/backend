@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::env;
 
 /// Body of an [`get_auth()`](crate::request::auth::get_auth) request
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AuthRequest {
     username: String,
     password: String,
