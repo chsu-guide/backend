@@ -10,3 +10,4 @@ comfy-table = "7.2.1"
 eyre.workspace = true
 tokio.workspace = true
 unitracker-chsu.workspace = true
+unitracker-psql.workspace = true

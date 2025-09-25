@@ -5,7 +5,6 @@ use reqwest::{Body, Client, Method, StatusCode};
 use serde_json;
 
 pub async fn get_auth(client: &Client) -> Result<AuthResponse, AuthErrors> {
-    println!("Getting auth");
     let auth_request = AuthRequest::new();
     let auth_request_de: Body = match serde_json::to_string(&auth_request) {
         Ok(auth) => auth.into(),
@@ -15,16 +14,13 @@ pub async fn get_auth(client: &Client) -> Result<AuthResponse, AuthErrors> {
         .request(Method::POST, AUTH_SIGNIN_URL)
         .header("content-type", "application/json")
         .body(auth_request_de);
-    println!("Request: {response:?}");
     let response = response.send().await?;
 
-    println!("got auth");
     let auth_response = match response.status() {
         StatusCode::OK => Ok(response.json().await?),
         StatusCode::BAD_REQUEST => Err(AuthErrors::EmptyRequestBody),
         StatusCode::UNAUTHORIZED => Err(AuthErrors::IncorrectAuthData),
         _ => Err(AuthErrors::UnknownError),
     };
-    println!("Auth: {auth_response:?}");
     auth_response
 }

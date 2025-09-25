@@ -9,42 +9,24 @@ use unitracker_chsu::{
     model::schedule::Schedule,
     request::{self, schedule::ScheduleRequestBuilder},
 };
-
-#[derive(Parser)]
-#[command(version, about)]
-struct Args {
-    #[arg(short, long)]
-    from: Option<String>,
-    #[arg(short, long)]
-    to: Option<String>,
-}
-const GROUP_ID: u64 = 1739582424505775711;
+use unitracker_psql::{
+    database::Database,
+    models::{auditorium::Auditorium, building::Building, group::Group, teacher::Teacher},
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = Args::parse();
-    let from = match args.from {
-        Some(ref string) => string.clone().parse()?,
-        None => Utc::now().naive_local().date(),
-    };
-    let to = match args.from {
-        Some(val) => val.clone().parse()?,
-        None => Utc::now()
-            .naive_local()
-            .date()
-            .checked_add_days(Days::new(7))
-            .unwrap(),
-    };
-    let request = ScheduleRequestBuilder::new()
-        .start(from)
-        .end(to)
-        .schedule_type(request::schedule::ScheduleType::Group(GROUP_ID))
-        .build();
     let client = ChsuClient::new().await;
-    let data = client.get_schedule(request).await.unwrap();
-    // let table = generate_table(&client.unwrap());
-
-    // println!("{table}");
+    let dbd =
+        Database::new("postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db").unwrap();
+    let data: Vec<unitracker_psql::models::teacher::Teacher> = client
+        .get_teachers()
+        .await
+        .unwrap()
+        .iter()
+        .map(|b| Teacher::from(b.clone()))
+        .collect();
+    println!("{:?}", dbd.insert_teacher_many(&data).await);
     Ok(())
 }
 
