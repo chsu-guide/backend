@@ -1,7 +1,7 @@
-use serde_derive::Deserialize;
 use crate::model::buildings::Building;
-use crate::model::teachers::TeacherList;
 use crate::model::disciplines::Discipline;
+use crate::model::teachers::TeacherList;
+use serde_derive::Deserialize;
 
 #[derive(Default, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -13,7 +13,7 @@ pub struct Schedule {
     pub start_time: String,
     /// End time formatted as hh:mm
     pub end_time: String,
-    pub discipline: Discipline,
+    pub discipline: Option<Discipline>,
     /// Groups attending the class
     pub groups: Vec<Group>,
     /// Building the class is located in

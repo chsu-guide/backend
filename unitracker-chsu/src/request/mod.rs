@@ -4,6 +4,7 @@ pub mod auditoriums;
 pub mod auth;
 pub mod buildings;
 mod constants;
+pub mod disciplines;
 pub mod groups;
 pub mod schedule;
 pub mod teachers;

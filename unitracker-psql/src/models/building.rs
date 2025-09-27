@@ -6,8 +6,8 @@ pub struct Building {
     pub name: Box<str>,
 }
 
-impl From<&buildings::Building> for Building {
-    fn from(value: &buildings::Building) -> Self {
+impl From<buildings::Building> for Building {
+    fn from(value: buildings::Building) -> Self {
         Self {
             id: value.id,
             name: value.title.clone().into_boxed_str(),

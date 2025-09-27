@@ -1,4 +1,5 @@
 use eyre::{Context, Result};
+use sqlx::{Postgres, QueryBuilder};
 
 use crate::{database::Database, models::discipline::Discipline};
 
@@ -38,9 +39,21 @@ impl Database {
         Ok(())
     }
     pub async fn insert_discipline_many(&self, discipline_list: &[Discipline]) -> Result<()> {
-        for discipline in discipline_list {
-            self.insert_discipline(discipline).await?
-        }
+        let (ids, names): (Vec<i64>, Vec<String>) = discipline_list
+            .iter()
+            .map(|d| (d.id, d.name.to_string()))
+            .unzip();
+        let query = sqlx::query!(
+            r#"
+            INSERT INTO discipline
+            (id, name)
+            SELECT * FROM UNNEST($1::bigint[], $2::text[])
+            ON CONFLICT (id) DO NOTHING;
+            "#,
+            &ids,
+            &names
+        );
+        let _ = query.execute(self).await?;
         Ok(())
     }
 }

@@ -135,7 +135,7 @@ create table schedule
     end_time         timestamp not null,
     lesson_type      text   not null,
     lesson_type_abbr text,
-    discipline_id    bigint not null
+    discipline_id    bigint
         constraint schedule_discipline_fk
             references discipline
 );

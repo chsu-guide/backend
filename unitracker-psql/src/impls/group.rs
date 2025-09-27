@@ -1,4 +1,6 @@
 use eyre::{Context, Result};
+use itertools::Itertools;
+use unitracker_chsu::model::groups::GroupList;
 
 use crate::{database::Database, models::group::Group};
 
@@ -44,6 +46,77 @@ impl Database {
         for group in group_list {
             self.insert_group(group).await?
         }
+        Ok(())
+    }
+
+    pub async fn initial_insert_groups_many(
+        &self,
+        group_list: &[unitracker_chsu::model::groups::Group],
+    ) -> Result<()> {
+        let (chair_id, chair_title): (Vec<_>, Vec<_>) = group_list
+            .iter()
+            .map(|g| (g.chair.id, g.chair.title.clone()))
+            .dedup_by(|lhs, rhs| lhs.0 == rhs.0)
+            .unzip();
+        let query = sqlx::query!(
+            r#"
+            INSERT INTO chair
+            (id, name)
+            SELECT * FROM UNNEST($1::bigint[], $2::text[])
+            ON CONFLICT (id) DO NOTHING
+            "#,
+            &chair_id,
+            &chair_title
+        )
+        .execute(self)
+        .await?;
+        println!("Inserted {:?} chairs", query);
+
+        let (faculty_id, faculty_name): (Vec<_>, Vec<_>) = group_list
+            .iter()
+            .map(|g| (g.faculty.id, g.faculty.title.clone()))
+            .dedup_by(|lhs, rhs| lhs.0 == rhs.0)
+            .unzip();
+        let query = sqlx::query!(
+            r#"
+            INSERT INTO faculty
+            (id, name)
+            SELECT * FROM UNNEST($1::bigint[], $2::text[])
+            ON CONFLICT (id) DO NOTHING
+            "#,
+            &faculty_id,
+            &faculty_name
+        )
+        .execute(self)
+        .await?;
+
+        println!("Inserted {:?} faculties", query);
+        let (group_id, group_title, group_course, group_faculty_id, group_chair_id): (
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+        ) = group_list
+            .iter()
+            .map(|g| {
+                (
+                    g.id,
+                    g.title.clone(),
+                    g.course as i16,
+                    g.faculty.id,
+                    g.chair.id,
+                )
+            })
+            .multiunzip();
+        let query = sqlx::query!(
+            r#"
+            INSERT INTO student_group (id, name, course, chair_id, faculty_id)
+            SELECT * FROM UNNEST($1::bigint[], $2::text[], $3::smallint[], $4::bigint[], $5::bigint[])
+            ON CONFLICT (id) DO NOTHING
+            "#,
+            &group_id, &group_title, &group_course, &group_chair_id, &group_faculty_id).execute(self).await?;
+
         Ok(())
     }
 }

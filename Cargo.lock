@@ -323,6 +323,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 
 [[package]]
+name = "constcat"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "136d3e02915a2cea4d74caa8681e2d44b1c3254bdbf17d11d41d587ff858832c"
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -995,6 +1001,15 @@ name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
+
+[[package]]
+name = "itertools"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itoa"
@@ -2365,6 +2380,7 @@ name = "unitracker-chsu"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "constcat",
  "dotenv",
  "futures",
  "http-body-util",
@@ -2392,6 +2408,7 @@ dependencies = [
  "eyre",
  "tokio",
  "unitracker-chsu",
+ "unitracker-psql",
 ]
 
 [[package]]
@@ -2401,6 +2418,7 @@ dependencies = [
  "chrono",
  "eyre",
  "futures",
+ "itertools",
  "sqlx",
  "unitracker-chsu",
 ]
