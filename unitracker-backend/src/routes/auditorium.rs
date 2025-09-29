@@ -7,7 +7,9 @@ use crate::util::types::IdOrName;
 #[derive(Deserialize)]
 struct AuditoriumQuery {
     auditorium: IdOrName,
+    #[serde(with = "chrono::naive::serde::ts_seconds")]
     start: NaiveDateTime,
+    #[serde(with = "chrono::naive::serde::ts_seconds")]
     end: NaiveDateTime,
 }
 

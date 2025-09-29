@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use eyre::{Context, Result, bail};
 use itertools::Itertools;
 use unitracker_chsu::model::schedule::Schedule;
@@ -19,6 +20,53 @@ impl Database {
             .fetch_optional(self)
             .await
             .wrap_err("Failed to fetch class")
+    }
+    pub async fn select_class_by_group_with_timestamps(
+        &self,
+        id: i64,
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    ) -> Result<Vec<Class>> {
+        let query = sqlx::query_as!(
+            Class,
+            r#"
+            SELECT s.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
+            FROM schedule s
+            JOIN schedule_group sg ON s.id = sg.schedule_id
+            JOIN student_group g ON sg.group_id = g.id
+            WHERE g.id = $1 AND start_time > $2 AND end_time < $3
+            "#,
+            id,
+            start,
+            end
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch classes")
+    }
+    pub async fn select_class_by_name_with_timestamps(
+        &self,
+        name: String,
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    ) -> Result<Vec<Class>> {
+        let query = sqlx::query_as!(
+            Class,
+            r#"
+            SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
+            FROM schedule
+            INNER JOIN discipline ON schedule.discipline_id = discipline.id
+            WHERE discipline.name = $1 AND start_time > $2 AND end_time < $3
+            "#,
+            name,
+            start,
+            end
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch classes")
     }
     pub async fn insert_class(&self, class: &Class) -> Result<()> {
         let query = sqlx::query!(

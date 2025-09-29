@@ -4,6 +4,7 @@ use sqlx::{Postgres, QueryBuilder};
 use crate::{database::Database, models::discipline::Discipline};
 
 impl Database {
+    /// Select by ID
     pub async fn select_discipline(&self, id: i64) -> Result<Option<Discipline>> {
         let query = sqlx::query_as!(
             Discipline,
