@@ -10,3 +10,6 @@ serde.workspace = true
 serde_json.workspace = true
 axum = { version = "0.8.4", features = ["json"] }
 unitracker-psql.workspace = true
+itertools = "0.14.0"
+apply = "0.3.0"
+unitracker-types = { version = "0.1.0", path = "../unitracker-types" }

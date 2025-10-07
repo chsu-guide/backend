@@ -1,5 +1,4 @@
 use eyre::{Context, Result};
-use sqlx::{Postgres, QueryBuilder};
 
 use crate::{database::Database, models::discipline::Discipline};
 

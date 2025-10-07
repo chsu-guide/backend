@@ -1,7 +1,14 @@
 use chrono::NaiveDateTime;
 use eyre::{Context, Result, bail};
 use itertools::Itertools;
+use sqlx::query;
+use sqlx::{
+    Postgres,
+    postgres::{PgArguments, PgRow},
+    query::Map,
+};
 use unitracker_chsu::model::schedule::Schedule;
+use unitracker_types::IdOrName;
 
 use crate::{database::Database, models::class::Class};
 
@@ -62,6 +69,116 @@ impl Database {
             name,
             start,
             end
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch classes")
+    }
+    pub async fn select_class_by_name_and_group(
+        &self,
+        group_name: IdOrName,
+        discipline_name: IdOrName,
+    ) -> Result<Vec<Class>> {
+        match (group_name, discipline_name) {
+            (IdOrName::Id(group), IdOrName::Id(discipline)) => {
+                self.class_select_query_ids(group, discipline).await
+            }
+            (IdOrName::Id(group), IdOrName::Name(discipline)) => {
+                self.class_select_query_group_id_discipline_name(group, &discipline)
+                    .await
+            }
+            (IdOrName::Name(group), IdOrName::Id(discipline)) => {
+                self.class_select_query_group_name_discipline_id(&group, discipline)
+                    .await
+            }
+            (IdOrName::Name(group), IdOrName::Name(discipline)) => {
+                self.class_select_query_names(&group, &discipline).await
+            }
+        }
+    }
+    async fn class_select_query_ids<'a>(&self, group: i64, discipline: i64) -> Result<Vec<Class>> {
+        let query = sqlx::query_as!(
+            Class,
+            r#"
+            SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
+            FROM schedule
+            INNER JOIN discipline ON schedule.discipline_id = discipline.id
+            JOIN schedule_group sg ON schedule.id = sg.schedule_id
+            JOIN student_group g ON sg.group_id = g.id
+            WHERE g.id = $1 AND discipline.id = $2
+            "#,
+            group,
+            discipline,
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch classes")
+    }
+    async fn class_select_query_group_name_discipline_id(
+        &self,
+        group: &str,
+        discipline: i64,
+    ) -> Result<Vec<Class>> {
+        let query = sqlx::query_as!(
+            Class,
+            r#"
+            SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
+            FROM schedule
+            INNER JOIN discipline ON schedule.discipline_id = discipline.id
+            JOIN schedule_group sg ON schedule.id = sg.schedule_id
+            JOIN student_group g ON sg.group_id = g.id
+            WHERE g.name = $1 AND discipline.id = $2
+            "#,
+            group,
+            discipline,
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch classes")
+    }
+    async fn class_select_query_group_id_discipline_name(
+        &self,
+        group: i64,
+        discipline: &str,
+    ) -> Result<Vec<Class>> {
+        let query = sqlx::query_as!(
+            Class,
+            r#"
+            SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
+            FROM schedule
+            INNER JOIN discipline ON schedule.discipline_id = discipline.id
+            JOIN schedule_group sg ON schedule.id = sg.schedule_id
+            JOIN student_group g ON sg.group_id = g.id
+            WHERE g.id = $1 AND discipline.name = $2
+            "#,
+            group,
+            discipline,
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch classes")
+    }
+    async fn class_select_query_names<'a>(
+        &self,
+        group: &'a str,
+        discipline: &'a str,
+    ) -> Result<Vec<Class>> {
+        let query = sqlx::query_as!(
+            Class,
+            r#"
+            SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
+            FROM schedule
+            INNER JOIN discipline ON schedule.discipline_id = discipline.id
+            JOIN schedule_group sg ON schedule.id = sg.schedule_id
+            JOIN student_group g ON sg.group_id = g.id
+            WHERE g.name = $1 AND discipline.name = $2
+            "#,
+            group,
+            discipline,
         );
         query
             .fetch_all(self)

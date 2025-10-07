@@ -89,6 +89,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "apply"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f47b57fc4521e3cae26a4d45b5227f8fadee4c345be0fefd8d5d1711afb8aeb9"
+
+[[package]]
 name = "atoi"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2368,12 +2374,15 @@ checksum = "4a1a07cc7db3810833284e8d372ccdc6da29741639ecc70c9ec107df0fa6154c"
 name = "unitracker-backend"
 version = "0.1.0"
 dependencies = [
+ "apply",
  "axum",
  "chrono",
+ "itertools",
  "serde",
  "serde_json",
  "tokio",
  "unitracker-psql",
+ "unitracker-types",
 ]
 
 [[package]]
@@ -2422,6 +2431,7 @@ dependencies = [
  "itertools",
  "sqlx",
  "unitracker-chsu",
+ "unitracker-types",
 ]
 
 [[package]]
@@ -2430,6 +2440,13 @@ version = "0.1.0"
 dependencies = [
  "unitracker-chsu",
  "unitracker-psql",
+]
+
+[[package]]
+name = "unitracker-types"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

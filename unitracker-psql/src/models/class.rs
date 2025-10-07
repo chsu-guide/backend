@@ -1,7 +1,7 @@
 use chrono::{self, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use unitracker_chsu::model::{disciplines::Discipline, schedule::Schedule};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Class {
     pub id: i64,
     pub created_at: NaiveDateTime,
@@ -10,6 +10,12 @@ pub struct Class {
     pub lesson_type: Box<str>,
     pub lesson_type_abbreviated: Option<String>,
     pub discipline_id: Option<i64>,
+}
+
+impl Class {
+    pub fn lesson_type(self) -> Box<str> {
+        self.lesson_type.clone()
+    }
 }
 
 impl From<Schedule> for Class {

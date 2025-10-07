@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use crate::context::{ApplicationContext, create_context};
-use crate::util::types::IdOrName;
 use axum::extract::State;
 use axum::extract::rejection::QueryRejection;
 use axum::{Router, extract::Query, routing::get};
 use chrono::NaiveDateTime;
 use chrono::naive::serde::ts_seconds_option;
 use serde::Deserialize;
+use unitracker_types::IdOrName;
 
 #[derive(PartialEq, Eq, Deserialize, Debug)]
 struct ScheduleQuery {

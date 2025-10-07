@@ -1,5 +1,5 @@
 [workspace]
-members = [ "unitracker-backend", "unitracker-chsu", "unitracker-cli", "unitracker-psql", "unitracker-server"]
+members = [ "unitracker-backend", "unitracker-chsu", "unitracker-cli", "unitracker-psql", "unitracker-server", "unitracker-types"]
 resolver = "3"
 
 [workspace.dependencies]
