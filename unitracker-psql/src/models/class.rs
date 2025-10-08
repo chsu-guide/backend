@@ -1,7 +1,8 @@
 use chrono::{self, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use sqlx::prelude::FromRow;
 use unitracker_chsu::model::{disciplines::Discipline, schedule::Schedule};
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, FromRow)]
 pub struct Class {
     pub id: i64,
     pub created_at: NaiveDateTime,

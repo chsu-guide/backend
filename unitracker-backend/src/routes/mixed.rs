@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use serde::Deserialize;
 
-use crate::util::types::IdOrName;
+use unitracker_types::IdOrName;
 
 #[derive(Deserialize)]
 struct MixedQuery {
