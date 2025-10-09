@@ -1,4 +1,5 @@
 use unitracker_chsu::model::groups;
+#[derive(Debug)]
 pub struct Group {
     pub id: i64,
     pub name: Box<str>,

@@ -22,12 +22,19 @@ async fn main() -> Result<()> {
     // let database_url = env!("DATABASE_URL");
     let database =
         Database::new("postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db").unwrap();
-    // fill_buildings(&dbd, &client).await;
-    // fill_teachers(&dbd, &client).await;
-    // fill_auditoriums(&dbd, &client).await;
+    println!("Initialized");
+    // fill_buildings(&database, &client).await;
+    // println!("Filled buildings\nFilling teachers");
+    // fill_teachers(&database, &client).await;
+    // println!("Filled teachers\nFilling auditoriums");
+    // fill_auditoriums(&database, &client).await;
+    // println!("Filled auditoriums\nFilling disciplines");
     // fill_disciplines(&database, &client).await;
+    // println!("Filled disciplines\nFilling groups");
     // fill_groups(&database, &client).await;
+    // println!("Filled groups\nFilling classes");
     fill_classes(&database, &client).await;
+    println!("Filled classes");
     Ok(())
 }
 
@@ -88,7 +95,12 @@ async fn fill_classes(database: &Database, client: &ChsuClient) {
                         .unwrap()
                         .date_naive(),
                 )
-                .end(Utc::now().date_naive())
+                .end(
+                    Utc::now()
+                        .checked_add_days(Days::new(20))
+                        .unwrap()
+                        .date_naive(),
+                )
                 .schedule_type(ScheduleType::Full)
                 .build(),
         )

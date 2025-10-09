@@ -11,3 +11,5 @@ eyre.workspace = true
 futures.workspace = true
 itertools = "0.14.0"
 unitracker-types = { version = "0.1.0", path = "../unitracker-types" }
+serde.workspace = true
+tracing.workspace = true

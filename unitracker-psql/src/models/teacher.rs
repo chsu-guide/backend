@@ -1,5 +1,6 @@
 use unitracker_chsu::model::teachers;
 
+#[derive(Debug)]
 pub struct Teacher {
     pub id: i64,
     pub last_name: Box<str>,

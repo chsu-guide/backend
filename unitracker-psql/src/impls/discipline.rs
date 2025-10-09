@@ -4,6 +4,7 @@ use crate::{database::Database, models::discipline::Discipline};
 
 impl Database {
     /// Select by ID
+    #[tracing::instrument]
     pub async fn select_discipline(&self, id: i64) -> Result<Option<Discipline>> {
         let query = sqlx::query_as!(
             Discipline,
@@ -19,6 +20,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch discipline")
     }
+    #[tracing::instrument]
     pub async fn insert_discipline(&self, discipline: &Discipline) -> Result<()> {
         let query = sqlx::query!(
             r#"
@@ -38,6 +40,7 @@ impl Database {
             .wrap_err("Failed to insert a discipline")?;
         Ok(())
     }
+    #[tracing::instrument]
     pub async fn insert_discipline_many(&self, discipline_list: &[Discipline]) -> Result<()> {
         let (ids, names): (Vec<i64>, Vec<String>) = discipline_list
             .iter()

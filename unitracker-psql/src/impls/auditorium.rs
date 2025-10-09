@@ -3,6 +3,7 @@ use crate::{database::Database, models::auditorium::Auditorium};
 use chrono::NaiveDateTime;
 use eyre::{Context, Result};
 impl Database {
+    #[tracing::instrument]
     pub async fn select_auditorium(&self, id: i64) -> Result<Option<Auditorium>> {
         let query = sqlx::query_as!(
             Auditorium,
@@ -24,7 +25,7 @@ impl Database {
         let query = sqlx::query_as!(
             Auditorium,
             r#"
-            SELECT
+             SELECT
                 id, name, number, building_id
             FROM auditorium
             WHERE name ~ $1

@@ -3,6 +3,7 @@ use eyre::{Context, Result};
 use crate::{database::Database, models::teacher::Teacher};
 
 impl Database {
+    #[tracing::instrument]
     pub async fn select_teacher(&self, id: i64) -> Result<Option<Teacher>> {
         let query = sqlx::query_as!(
             Teacher,
@@ -18,6 +19,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch discipline")
     }
+    #[tracing::instrument]
     pub async fn insert_teacher(&self, teacher: &Teacher) -> Result<()> {
         let query = sqlx::query!(
             r#"
@@ -39,10 +41,15 @@ impl Database {
             .wrap_err("Failed to insert a class")?;
         Ok(())
     }
+    #[tracing::instrument]
     pub async fn insert_teacher_many(&self, teacher_list: &[Teacher]) -> Result<()> {
+        let tran = self.begin().await?;
+
         for teacher in teacher_list {
             self.insert_teacher(teacher).await?
         }
+        tran.commit().await?;
+
         Ok(())
     }
 }

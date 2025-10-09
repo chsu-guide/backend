@@ -1,5 +1,6 @@
 use unitracker_chsu::model::disciplines;
 
+#[derive(Debug)]
 pub struct Discipline {
     pub id: i64,
     pub name: Box<str>,

@@ -1,8 +1,9 @@
 use chrono::{self, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use serde::Serialize;
 use sqlx::prelude::FromRow;
 use unitracker_chsu::model::{disciplines::Discipline, schedule::Schedule};
 
-#[derive(Debug, PartialEq, Eq, Hash, FromRow)]
+#[derive(Debug, PartialEq, Eq, Hash, FromRow, Serialize)]
 pub struct Class {
     pub id: i64,
     pub created_at: NaiveDateTime,
@@ -14,8 +15,8 @@ pub struct Class {
 }
 
 impl Class {
-    pub fn lesson_type(self) -> Box<str> {
-        self.lesson_type.clone()
+    pub fn lesson_type(self) -> String {
+        self.lesson_type.into_string()
     }
 }
 

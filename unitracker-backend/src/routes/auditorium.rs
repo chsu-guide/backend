@@ -5,9 +5,8 @@ use axum::{
 };
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use unitracker_server::context::Context;
 use unitracker_types::IdOrName;
-
-use crate::context::{ApplicationContext, create_context};
 
 #[derive(Deserialize)]
 struct AuditoriumQuery {
@@ -29,7 +28,7 @@ struct BusyRange {
     end: NaiveDateTime,
 }
 async fn is_available(
-    State(ctx): State<ApplicationContext>,
+    State(ctx): State<Context>,
     Query(auditorium): Query<AuditoriumQuery>,
 ) -> Result<AvailabilityResponse, Box<dyn std::error::Error>> {
     match auditorium.auditorium {

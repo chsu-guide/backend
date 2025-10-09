@@ -5,6 +5,7 @@ use unitracker_chsu::model::groups::GroupList;
 use crate::{database::Database, models::group::Group};
 
 impl Database {
+    #[tracing::instrument]
     pub async fn select_group(&self, id: i64) -> Result<Option<Group>> {
         let query = sqlx::query_as!(
             Group,
@@ -20,6 +21,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch discipline")
     }
+    #[tracing::instrument]
     pub async fn insert_group(&self, group: &Group) -> Result<()> {
         let query = sqlx::query!(
             r#"
@@ -42,6 +44,7 @@ impl Database {
             .wrap_err("Failed to insert a class")?;
         Ok(())
     }
+    #[tracing::instrument]
     pub async fn insert_group_many(&self, group_list: &[Group]) -> Result<()> {
         for group in group_list {
             self.insert_group(group).await?
@@ -49,6 +52,7 @@ impl Database {
         Ok(())
     }
 
+    #[tracing::instrument]
     pub async fn initial_insert_groups_many(
         &self,
         group_list: &[unitracker_chsu::model::groups::Group],

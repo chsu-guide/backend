@@ -9,6 +9,8 @@ unitracker-cli = { path = "./unitracker-cli" }
 unitracker-psql = { path = "./unitracker-psql"}
 unitracker-server = { path = "./unitracker-server"}
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
+tracing = { version = "0.1.41" }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"]}
 reqwest = { version = "0.12.5", features = ["json"] }
 chrono = { version = "0.4.34", features = ["serde"] }
 dotenv = "0.15.0"

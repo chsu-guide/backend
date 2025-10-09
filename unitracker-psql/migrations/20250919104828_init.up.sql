@@ -173,7 +173,7 @@ create table schedule_auditorium
     schedule_id   bigint not null
         constraint schedule_fk
             references schedule,
-    auditorium_id bigint not null
+    auditorium_id bigint 
         constraint auditorium_fk
             references auditorium,
     constraint schedule_auditorium_pk

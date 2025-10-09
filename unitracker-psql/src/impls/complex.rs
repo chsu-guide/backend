@@ -8,6 +8,7 @@ use crate::{database::Database, models::class::Class};
 impl Database {
     pub async fn get_mixed_schedule(
         &self,
+        auditorium: Option<IdOrName>,
         teacher: Option<IdOrName>,
         group: Option<IdOrName>,
         discipline: Option<IdOrName>,
@@ -20,12 +21,27 @@ impl Database {
             FROM schedule s
             "#,
         );
+        match auditorium {
+            Some(a) => {
+                qb.push(
+                    r#"
+                    INNER JOIN schedule_auditorium s_a ON s.id = s_a.schedule_id
+                    INNER JOIN auditorium a ON a.id = s_a.auditorium_id
+                    "#,
+                );
 
+                match a {
+                    IdOrName::Id(id) => qb.push(r#"WHERE a.id ="#).push_bind(id),
+                    IdOrName::Name(name) => qb.push(r#"WHERE a.name = "#).push_bind(name),
+                };
+            }
+            None => (),
+        }
         match teacher {
             Some(t) => {
                 qb.push(
                     r#"
-                    INNER JOIN schedule_teacher s.t. ON s.id = s_t.schedule_id
+                    INNER JOIN schedule_teacher s_t ON s.id = s_t.schedule_id
                     INNER JOIN teacher t ON t.id = s_t.teacher_id
                     "#,
                 );

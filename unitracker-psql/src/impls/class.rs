@@ -13,6 +13,7 @@ use unitracker_types::IdOrName;
 use crate::{database::Database, models::class::Class};
 
 impl Database {
+    #[tracing::instrument]
     pub async fn select_class(&self, id: i64) -> Result<Option<Class>> {
         let query = sqlx::query_as!(
             Class,
@@ -28,6 +29,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch class")
     }
+    #[tracing::instrument]
     pub async fn select_class_by_group_with_timestamps(
         &self,
         id: i64,
@@ -52,6 +54,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch classes")
     }
+    #[tracing::instrument]
     pub async fn select_class_by_name_with_timestamps(
         &self,
         name: String,
@@ -75,6 +78,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch classes")
     }
+    #[tracing::instrument]
     pub async fn select_class_by_name_and_group(
         &self,
         group_name: IdOrName,
@@ -97,6 +101,7 @@ impl Database {
             }
         }
     }
+    #[tracing::instrument]
     async fn class_select_query_ids<'a>(&self, group: i64, discipline: i64) -> Result<Vec<Class>> {
         let query = sqlx::query_as!(
             Class,
@@ -116,6 +121,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch classes")
     }
+    #[tracing::instrument]
     async fn class_select_query_group_name_discipline_id(
         &self,
         group: &str,
@@ -139,6 +145,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch classes")
     }
+    #[tracing::instrument]
     async fn class_select_query_group_id_discipline_name(
         &self,
         group: i64,
@@ -269,50 +276,62 @@ impl Database {
             .filter(|s| s.lecturers.is_some())
             .map(|s| (s.id, s.groups.clone(), s.lecturers.as_ref().unwrap()))
             .multiunzip();
-        let (schedules, teachers): (Vec<i64>, Vec<i64>) = schedule
+        for s in schedule {
+            self.insert_class(&Class::from(s.to_owned())).await?;
+        }
+        let schedule_teacher_pairs = schedule
             .iter()
             .filter(|s| s.lecturers.is_some())
             .map(|s| (s.id, s.lecturers.as_ref().unwrap()))
-            .flat_map(|s| s.1.iter().map(move |val| (s.0, val.id)))
-            .unzip();
-        let query = sqlx::query!(
-            r#"
-            INSERT INTO schedule_teacher
-            (schedule_id, teacher_id)
-            SELECT * FROM UNNEST($1::bigint[], $2::bigint[])
-            ON CONFLICT DO NOTHING
-            "#,
-            &schedules,
-            &teachers
-        )
-        .execute(self)
-        .await?;
-        println!("Inserted {query:?} pairs");
-        let (schedules, groups): (Vec<i64>, Vec<i64>) = schedule
+            .flat_map(|s| s.1.iter().map(move |val| (s.0, val.id)));
+        let transaction = self.begin().await?;
+        println!("Started importing schedule_teachers:");
+        for (sched, teach) in schedule_teacher_pairs {
+            let query = sqlx::query!(
+                r#"
+                INSERT INTO schedule_teacher
+                (schedule_id, teacher_id)
+                VALUES ($1, $2)
+                ON CONFLICT DO NOTHING
+                "#,
+                sched,
+                teach
+            )
+            .execute(self)
+            .await
+            .wrap_err("Failed to insert schedule-teacher pair");
+        }
+        transaction.commit().await?;
+        let schedule_group_pairs = schedule
             .iter()
-            .flat_map(|s| s.groups.iter().map(move |val| (s.id, val.id)))
-            .unzip();
+            .flat_map(|s| s.groups.iter().map(move |val| (s.id, val.id)));
 
-        let query = sqlx::query!(
-            r#"
-            INSERT INTO schedule_group
-            (schedule_id, group_id)
-            SELECT * FROM UNNEST($1::bigint[], $2::bigint[])
-            ON CONFLICT DO NOTHING
-            "#,
-            &schedules,
-            &groups
-        )
-        .execute(self)
-        .await?;
-        println!("Inserted {query:?} pairs");
+        println!("Started importing schedule_group:");
+        let transaction = self.begin().await?;
+        for (sched, group) in schedule_group_pairs {
+            let query = sqlx::query!(
+                r#"
+                INSERT INTO schedule_group
+                (schedule_id, group_id)
+                VALUES ($1, $2)
+                ON CONFLICT DO NOTHING
+                "#,
+                sched,
+                group
+            )
+            .execute(self)
+            .await
+            .wrap_err("Failed to insert schedule-group pair");
+        }
+        transaction.commit().await?;
         let filtered: Vec<_> = schedule
             .iter()
             .filter(|s| s.auditory.is_some())
             .filter(|s| s.discipline.is_some())
             .filter(|s| s.lecturers.is_some())
             .collect();
-        sqlx::query!("BEGIN").execute(self).await;
+        println!("Started importing schedule_auditorium:");
+        let transaction = self.begin().await?;
         for s in filtered {
             let s_a = sqlx::query!(
                 "INSERT INTO schedule_auditorium (schedule_id, auditorium_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
@@ -330,22 +349,10 @@ impl Database {
                     );
                 }
             }
+            self.insert_class(&Class::from(s.to_owned())).await?;
         }
-        sqlx::query!("COMMIT").execute(self).await;
-        // let query = sqlx::query!(
-        //     r#"
-        //     INSERT INTO schedule_auditorium
-        //     (schedule_id, auditorium_id)
-        //     SELECT * FROM UNNEST($1::bigint[], $2::bigint[])
-        //     ON CONFLICT DO NOTHING
-        //     "#,
-        //     &schedules,
-        //     &auditoriums
-        // )
-        // .execute(self)
-        // .await?;
-        // println!("Inserted {query:?} pairs");
-        // // Populate schedule_teacher
+        transaction.commit().await?;
+
         Ok(())
     }
 }
