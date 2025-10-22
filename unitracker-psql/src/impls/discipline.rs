@@ -20,6 +20,22 @@ impl Database {
             .await
             .wrap_err("Failed to fetch discipline")
     }
+
+    #[tracing::instrument]
+    pub async fn select_discipline_all(&self) -> Result<Vec<Discipline>> {
+        let query = sqlx::query_as!(
+            Discipline,
+            r#"
+            SELECT id, name
+            FROM discipline
+            "#,
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch discipline")
+    }
+
     #[tracing::instrument]
     pub async fn insert_discipline(&self, discipline: &Discipline) -> Result<()> {
         let query = sqlx::query!(

@@ -1,6 +1,5 @@
 use eyre::{Context, Result};
 use itertools::Itertools;
-use unitracker_chsu::model::groups::GroupList;
 
 use crate::{database::Database, models::group::Group};
 
@@ -20,6 +19,19 @@ impl Database {
             .fetch_optional(self)
             .await
             .wrap_err("Failed to fetch discipline")
+    }
+    pub async fn select_groups_all(&self) -> Result<Vec<Group>> {
+        let query = sqlx::query_as!(
+            Group,
+            r#"
+            SELECT id, name, course, faculty_id, chair_id
+            FROM student_group
+            "#
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch group list")
     }
     #[tracing::instrument]
     pub async fn insert_group(&self, group: &Group) -> Result<()> {
@@ -113,7 +125,7 @@ impl Database {
                 )
             })
             .multiunzip();
-        let query = sqlx::query!(
+        let _ = sqlx::query!(
             r#"
             INSERT INTO student_group (id, name, course, chair_id, faculty_id)
             SELECT * FROM UNNEST($1::bigint[], $2::text[], $3::smallint[], $4::bigint[], $5::bigint[])

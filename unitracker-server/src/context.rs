@@ -1,6 +1,7 @@
 use unitracker_chsu::ChsuClient;
 use unitracker_psql::database::Database;
 
+#[derive(Debug)]
 pub struct Clients {
     psql: Database,
     chsu: ChsuClient,
@@ -15,6 +16,7 @@ impl Clients {
         &self.psql
     }
 }
+#[derive(Debug)]
 pub struct Context {
     clients: Clients,
 }

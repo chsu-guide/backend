@@ -5,6 +5,7 @@ use sqlx::{
     pool::PoolConnection,
     postgres::{PgPoolOptions, PgQueryResult, PgRow, PgStatement, PgTypeInfo},
 };
+use tracing::trace;
 
 #[derive(Debug)]
 pub struct Database {
@@ -12,13 +13,16 @@ pub struct Database {
 }
 
 impl Database {
+    #[tracing::instrument(err(Debug, level = tracing::Level::ERROR))]
     pub fn new(uri: &str) -> Result<Self> {
         let pool = PgPoolOptions::new().connect_lazy(uri)?;
+        trace!("Initialized the database");
 
         Ok(Self { pool })
     }
 
     /// Retrieves a connection from the pool.
+    #[allow(unused)]
     pub(crate) async fn acquire(&self) -> Result<PoolConnection<Postgres>, SqlxError> {
         self.pool.acquire().await
     }

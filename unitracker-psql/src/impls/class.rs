@@ -1,18 +1,13 @@
 use chrono::NaiveDateTime;
 use eyre::{Context, Result, bail};
-use itertools::Itertools;
-use sqlx::query;
-use sqlx::{
-    Postgres,
-    postgres::{PgArguments, PgRow},
-    query::Map,
-};
+use tracing::{Level, info, warn};
 use unitracker_chsu::model::schedule::Schedule;
 use unitracker_types::IdOrName;
 
 use crate::{database::Database, models::class::Class};
 
 impl Database {
+    /// Select a Class by ID
     #[tracing::instrument]
     pub async fn select_class(&self, id: i64) -> Result<Option<Class>> {
         let query = sqlx::query_as!(
@@ -29,8 +24,26 @@ impl Database {
             .await
             .wrap_err("Failed to fetch class")
     }
-    #[tracing::instrument]
     pub async fn select_class_by_group_with_timestamps(
+        &self,
+        group: IdOrName,
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    ) -> Result<Vec<Class>> {
+        match group {
+            IdOrName::Id(id) => {
+                self.select_class_by_group_id_with_timestamps(id, start, end)
+                    .await
+            }
+            IdOrName::Name(name) => {
+                self.select_class_by_group_name_with_timestamps(name, start, end)
+                    .await
+            }
+        }
+    }
+    /// Select a list of classes by group ID within a certain range of dates
+    #[tracing::instrument]
+    async fn select_class_by_group_id_with_timestamps(
         &self,
         id: i64,
         start: NaiveDateTime,
@@ -54,8 +67,9 @@ impl Database {
             .await
             .wrap_err("Failed to fetch classes")
     }
+    /// Select a list of classes by group name within a certain date range
     #[tracing::instrument]
-    pub async fn select_class_by_name_with_timestamps(
+    async fn select_class_by_group_name_with_timestamps(
         &self,
         name: String,
         start: NaiveDateTime,
@@ -67,19 +81,24 @@ impl Database {
             SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
             FROM schedule
             INNER JOIN discipline ON schedule.discipline_id = discipline.id
-            WHERE discipline.name = $1 AND start_time > $2 AND end_time < $3
+            JOIN schedule_group sg ON schedule.id = sg.schedule_id
+            JOIN student_group g ON sg.group_id = g.id
+            WHERE g.name = $1 AND start_time > $2 AND end_time < $3
             "#,
             name,
             start,
             end
         );
-        query
-            .fetch_all(self)
-            .await
-            .wrap_err("Failed to fetch classes")
+        let res = query.fetch_all(self).await;
+        info!("result: {res:?}");
+
+        res.wrap_err("Failed to fetch classes")
     }
-    #[tracing::instrument]
-    pub async fn select_class_by_name_and_group(
+    /// Select a class by group and discipline
+    #[tracing::instrument(
+        skip(self, group_name, discipline_name),
+        err(Debug, level = Level::WARN))]
+    pub async fn select_class_by_group_and_discipline(
         &self,
         group_name: IdOrName,
         discipline_name: IdOrName,
@@ -145,7 +164,6 @@ impl Database {
             .await
             .wrap_err("Failed to fetch classes")
     }
-    #[tracing::instrument]
     async fn class_select_query_group_id_discipline_name(
         &self,
         group: i64,
@@ -164,10 +182,15 @@ impl Database {
             group,
             discipline,
         );
-        query
+        let ret = query
             .fetch_all(self)
             .await
-            .wrap_err("Failed to fetch classes")
+            .wrap_err("Failed to fetch classes")?;
+
+        if ret.is_empty() {
+            bail!("Fetched zero classes");
+        }
+        Ok(ret)
     }
     async fn class_select_query_names<'a>(
         &self,
@@ -192,6 +215,7 @@ impl Database {
             .await
             .wrap_err("Failed to fetch classes")
     }
+    /// Insert a class
     pub async fn insert_class(&self, class: &Class) -> Result<()> {
         let query = sqlx::query!(
             r#"
@@ -221,6 +245,8 @@ impl Database {
 
         Ok(())
     }
+    // Mass-insert classes
+    // WARNING: Very heavy on RAM due to unnesting
     pub async fn insert_class_many(&self, class_list: &[Class]) -> Result<()> {
         let (
             class_ids,
@@ -244,10 +270,7 @@ impl Database {
                 )
             })
             .collect();
-        // for class in class_list {
-        //     self.insert_class(class).await?;
-        // }
-        let query = sqlx::query!(
+        let _ = sqlx::query!(
             r#"
             INSERT INTO schedule
             (id, request_date, start_time, end_time, lesson_type, lesson_type_abbr, discipline_id)
@@ -267,15 +290,9 @@ impl Database {
         Ok(())
     }
 
+    // Mass-insert classes and related entities
+    // WARNING: Very heavy on RAM due to unnesting
     pub async fn populate_classes(&self, schedule: &[Schedule]) -> Result<()> {
-        // Populate schedule_auditorium
-        let (schedules, groups, lecturers): (Vec<_>, Vec<_>, Vec<_>) = schedule
-            .iter()
-            .filter(|s| s.auditory.is_some())
-            .filter(|s| s.auditory.as_ref().unwrap().id != 0)
-            .filter(|s| s.lecturers.is_some())
-            .map(|s| (s.id, s.groups.clone(), s.lecturers.as_ref().unwrap()))
-            .multiunzip();
         for s in schedule {
             self.insert_class(&Class::from(s.to_owned())).await?;
         }
@@ -287,7 +304,7 @@ impl Database {
         let transaction = self.begin().await?;
         println!("Started importing schedule_teachers:");
         for (sched, teach) in schedule_teacher_pairs {
-            let query = sqlx::query!(
+            let _ = sqlx::query!(
                 r#"
                 INSERT INTO schedule_teacher
                 (schedule_id, teacher_id)
@@ -299,7 +316,7 @@ impl Database {
             )
             .execute(self)
             .await
-            .wrap_err("Failed to insert schedule-teacher pair");
+            .wrap_err("Failed to insert schedule-teacher pair")?;
         }
         transaction.commit().await?;
         let schedule_group_pairs = schedule
@@ -309,7 +326,7 @@ impl Database {
         println!("Started importing schedule_group:");
         let transaction = self.begin().await?;
         for (sched, group) in schedule_group_pairs {
-            let query = sqlx::query!(
+            let _ = sqlx::query!(
                 r#"
                 INSERT INTO schedule_group
                 (schedule_id, group_id)
@@ -321,7 +338,7 @@ impl Database {
             )
             .execute(self)
             .await
-            .wrap_err("Failed to insert schedule-group pair");
+            .wrap_err("Failed to insert schedule-group pair")?;
         }
         transaction.commit().await?;
         let filtered: Vec<_> = schedule
@@ -343,8 +360,8 @@ impl Database {
             match s_a {
                 Ok(_) => {}
                 Err(e) => {
-                    eprintln!(
-                        "Failed to insert auditorium {}",
+                    warn!(
+                        "Failed to insert auditorium {} : {e}",
                         s.auditory.as_ref().unwrap().id
                     );
                 }

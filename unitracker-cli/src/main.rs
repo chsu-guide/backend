@@ -1,28 +1,25 @@
+#![allow(unused)] // A lot of population has to only be done once and making flags is annoying
+
 use chrono::{Days, Utc};
-use comfy_table::Table;
 use tokio;
 
 use eyre::Result;
+use tracing::info;
 use unitracker_chsu::{
     ChsuClient,
-    model::schedule::Schedule,
-    request::schedule::{ScheduleRequest, ScheduleRequestBuilder, ScheduleType},
+    request::schedule::{ScheduleRequestBuilder, ScheduleType},
 };
-use unitracker_psql::{
-    database::Database,
-    models::{
-        class::{self, Class},
-        teacher::Teacher,
-    },
-};
+use unitracker_psql::database::Database;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt::init();
+    info!("Starting up");
     let client = ChsuClient::new().await;
     // let database_url = env!("DATABASE_URL");
     let database =
         Database::new("postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db").unwrap();
-    println!("Initialized");
+    info!("Initialized client and database");
     // fill_buildings(&database, &client).await;
     // println!("Filled buildings\nFilling teachers");
     // fill_teachers(&database, &client).await;
@@ -85,19 +82,21 @@ async fn fill_groups(database: &Database, client: &ChsuClient) {
         .unwrap();
 }
 
+#[tracing::instrument]
 async fn fill_classes(database: &Database, client: &ChsuClient) {
+    info!("starting class population");
     let api_classes = client
         .get_schedule(
             ScheduleRequestBuilder::new()
                 .start(
                     Utc::now()
-                        .checked_sub_days(Days::new(20))
+                        .checked_add_days(Days::new(2))
                         .unwrap()
                         .date_naive(),
                 )
                 .end(
                     Utc::now()
-                        .checked_add_days(Days::new(20))
+                        .checked_add_days(Days::new(7))
                         .unwrap()
                         .date_naive(),
                 )
@@ -106,6 +105,7 @@ async fn fill_classes(database: &Database, client: &ChsuClient) {
         )
         .await
         .unwrap();
-    println!("Got {} classes", api_classes.len());
+    info!("Got {} classes", api_classes.len());
     database.populate_classes(&api_classes).await.unwrap();
+    info!("populated classes");
 }

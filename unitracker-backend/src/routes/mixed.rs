@@ -38,10 +38,11 @@ async fn get_mixed_schedule(
             mixed.to,
         )
         .await
-        .map_err(|e| StatusCode::IM_A_TEAPOT)?;
+        .map_err(|_| StatusCode::IM_A_TEAPOT)?;
     return Ok(Json(schedule));
 }
 
+/// Maps /mixed
 pub fn mixed_router() -> Router<Arc<Context>> {
     Router::new().route("/mixed", get(get_mixed_schedule))
 }

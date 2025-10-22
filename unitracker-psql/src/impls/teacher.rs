@@ -19,6 +19,19 @@ impl Database {
             .await
             .wrap_err("Failed to fetch discipline")
     }
+    pub async fn select_teacher_all(&self) -> Result<Vec<Teacher>> {
+        let query = sqlx::query_as!(
+            Teacher,
+            r#"
+            SELECT id, last_name, first_name, middle_name
+            FROM teacher
+            "#,
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch teachers")
+    }
     #[tracing::instrument]
     pub async fn insert_teacher(&self, teacher: &Teacher) -> Result<()> {
         let query = sqlx::query!(

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
+use apply::Apply;
 use axum::Json;
 use axum::extract::State;
-use axum::extract::rejection::QueryRejection;
 use axum::http::StatusCode;
 use axum::{Router, extract::Query, routing::get};
-use chrono::NaiveDateTime;
 use chrono::naive::serde::ts_seconds_option;
+use chrono::{NaiveDateTime, Utc};
 use serde::Deserialize;
 use unitracker_psql::models::class::Class;
 use unitracker_server::context::Context;
@@ -23,38 +23,18 @@ struct ScheduleQuery {
 
 async fn get_schedule(
     State(context): State<Arc<Context>>,
-    schedule: Result<Query<ScheduleQuery>, QueryRejection>,
+    Query(query): Query<ScheduleQuery>,
 ) -> Result<Json<Vec<Class>>, StatusCode> {
-    println!("{schedule:?}");
-    let schedule = schedule.unwrap().0;
-    match schedule.group {
-        IdOrName::Id(id) => {
-            let schedule_result = context
-                .database()
-                .select_class_by_group_with_timestamps(
-                    id,
-                    schedule.start.unwrap(),
-                    schedule.end.unwrap(),
-                )
-                .await
-                .map_err(|e| StatusCode::IM_A_TEAPOT)?;
-            println!("{schedule_result:?}");
-            return Ok(Json(schedule_result));
-        }
-        IdOrName::Name(name) => {
-            let schedule_results = context
-                .database()
-                .select_class_by_name_with_timestamps(
-                    name,
-                    schedule.start.unwrap_or_default(),
-                    schedule.end.unwrap_or_default(),
-                )
-                .await
-                .map_err(|e| StatusCode::IM_A_TEAPOT);
-            let data = println!("{schedule_results:?}");
-            return Ok(Json(schedule_results?));
-        }
-    }
+    context
+        .database()
+        .select_class_by_group_with_timestamps(
+            query.group,
+            query.start.unwrap_or(Utc::now().naive_local()),
+            query.end.unwrap_or(Utc::now().naive_local()),
+        )
+        .await
+        .map_err(|_| StatusCode::IM_A_TEAPOT)?
+        .apply(|v| Ok(Json(v)))
 }
 
 #[derive(PartialEq, Eq, Deserialize, Debug)]
@@ -67,6 +47,7 @@ async fn get_teacher_schedule(Query(schedule): Query<TeacherScheduleQuery>) {
     println!("{schedule:?}")
 }
 
+/// Maps /schedule, /schedule/teacher
 pub fn schedule_router() -> Router<Arc<Context>> {
     Router::new()
         .route("/schedule", get(get_schedule))

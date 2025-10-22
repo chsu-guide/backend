@@ -1808,6 +1808,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "signal-hook-registry"
+version = "1.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2a4719bff48cee6b39d12c020eeb490953ad2443b7055bd0b21fca26bd8c28b"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "signature"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2256,6 +2265,7 @@ dependencies = [
  "libc",
  "mio",
  "pin-project-lite",
+ "signal-hook-registry",
  "slab",
  "socket2 0.6.0",
  "tokio-macros",
@@ -2497,6 +2507,8 @@ dependencies = [
  "apply",
  "axum",
  "chrono",
+ "dotenvy",
+ "eyre",
  "itertools",
  "serde",
  "serde_json",
@@ -2530,6 +2542,7 @@ dependencies = [
  "time",
  "time-macros",
  "tokio",
+ "tracing",
  "url",
 ]
 
@@ -2542,6 +2555,8 @@ dependencies = [
  "comfy-table",
  "eyre",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
  "unitracker-chsu",
  "unitracker-psql",
 ]

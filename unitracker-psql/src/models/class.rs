@@ -1,7 +1,7 @@
 use chrono::{self, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::Serialize;
 use sqlx::prelude::FromRow;
-use unitracker_chsu::model::{disciplines::Discipline, schedule::Schedule};
+use unitracker_chsu::model::schedule::Schedule;
 
 #[derive(Debug, PartialEq, Eq, Hash, FromRow, Serialize)]
 pub struct Class {
