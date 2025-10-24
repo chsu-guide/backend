@@ -21,17 +21,15 @@ async fn main() -> Result<()> {
         Database::new("postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db").unwrap();
     info!("Initialized client and database");
     // fill_buildings(&database, &client).await;
-    // println!("Filled buildings\nFilling teachers");
     // fill_teachers(&database, &client).await;
     // println!("Filled teachers\nFilling auditoriums");
-    // fill_auditoriums(&database, &client).await;
+    fill_auditoriums(&database, &client).await;
     // println!("Filled auditoriums\nFilling disciplines");
     // fill_disciplines(&database, &client).await;
     // println!("Filled disciplines\nFilling groups");
     // fill_groups(&database, &client).await;
     // println!("Filled groups\nFilling classes");
-    fill_classes(&database, &client).await;
-    println!("Filled classes");
+    // fill_classes(&database, &client).await;
     Ok(())
 }
 
@@ -45,24 +43,24 @@ async fn fill_teachers(database: &Database, client: &ChsuClient) {
 }
 
 async fn fill_auditoriums(database: &Database, client: &ChsuClient) {
+    info!("Filling auditoriums");
     let api_teachers = client.get_auditoriums().await.unwrap();
-    let db_teachers: Vec<_> = api_teachers
-        .iter()
-        .map(|f| unitracker_psql::models::auditorium::Auditorium::from(f.clone()))
-        .collect();
-    database.insert_auditorium_many(&db_teachers).await.unwrap();
+    database
+        .insert_auditorium_many(&api_teachers)
+        .await
+        .unwrap();
+    info!("Filled auditoriums");
 }
 
 async fn fill_buildings(database: &Database, client: &ChsuClient) {
+    info!("Filling buildings");
     let api_teachers = client.get_buildings().await.unwrap();
-    let db_teachers: Vec<_> = api_teachers
-        .iter()
-        .map(|f| unitracker_psql::models::building::Building::from(f.clone()))
-        .collect();
-    database.insert_building_many(&db_teachers).await.unwrap();
+    database.insert_building_many(&api_teachers).await.unwrap();
+    info!("Filled buildings");
 }
 
 async fn fill_disciplines(database: &Database, client: &ChsuClient) {
+    info!("Filling disciplines");
     let api_disciplines = client.get_disciplines().await.unwrap();
     let db_disciplines: Vec<_> = api_disciplines
         .iter()
@@ -72,6 +70,7 @@ async fn fill_disciplines(database: &Database, client: &ChsuClient) {
         .insert_discipline_many(&db_disciplines)
         .await
         .unwrap();
+    info!("Filled disciplines");
 }
 
 async fn fill_groups(database: &Database, client: &ChsuClient) {

@@ -1,10 +1,10 @@
 -- Add up migration script here
 create table discipline
 (
-    id    bigint not null
+    id    bigserial not null
         constraint discipline_pk
             primary key,
-    name text   not null
+    name text   not null unique
 );
 
 comment on column discipline.id is 'Discipline ID';
@@ -16,7 +16,7 @@ alter table discipline
 
 create table faculty
 (
-    id    bigint not null
+    id    bigserial not null
         constraint faculty_pk
             primary key,
     name text   not null
@@ -31,7 +31,7 @@ alter table faculty
 
 create table chair
 (
-    id    bigint not null
+    id    bigserial not null
         constraint chair_pk
             primary key,
     name text   not null
@@ -46,7 +46,7 @@ alter table chair
 
 create table student_group
 (
-    id         bigint   not null
+    id         bigserial not null
         constraint groups_pk
             primary key,
     name text     not null,
@@ -70,7 +70,7 @@ alter table student_group
 
 create table teacher
 (
-    id          bigint not null
+    id          bigserial not null
         constraint teacher_pk
             primary key,
     last_name   text   not null,
@@ -91,10 +91,10 @@ alter table teacher
 
 create table building
 (
-    id    bigint not null
+    id    bigserial not null
         constraint building_pk
             primary key,
-    name text   not null
+    name text   not null unique
 );
 
 comment on column building.id is 'Building ID';
@@ -106,10 +106,10 @@ alter table building
 
 create table auditorium
 (
-    id          bigint not null
+    id          bigserial not null
         constraint auditorium_pk
             primary key,
-    name        text   not null,
+    name        text   not null unique,
     number      text   not null,
     building_id bigint
         constraint auditorium_building_fk
@@ -127,7 +127,7 @@ alter table auditorium
 
 create table schedule
 (
-    id               bigint not null
+    id               bigserial not null
         constraint schedule_pk
             primary key,
     request_date     timestamp not null,
@@ -173,7 +173,7 @@ create table schedule_auditorium
     schedule_id   bigint not null
         constraint schedule_fk
             references schedule,
-    auditorium_id bigint 
+    auditorium_id bigint
         constraint auditorium_fk
             references auditorium,
     constraint schedule_auditorium_pk

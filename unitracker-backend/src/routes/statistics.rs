@@ -23,7 +23,11 @@ struct RemainingClassesQuery {
 }
 impl Display for RemainingClassesQuery {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Discipline: {}, group: {}", self.discipline, self.group)
+        write!(
+            f,
+            "Discipline: {:?}, group: {:?}",
+            self.discipline, self.group
+        )
     }
 }
 #[derive(Serialize, Deserialize, Debug)]

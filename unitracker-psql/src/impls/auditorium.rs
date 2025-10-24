@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     database::Database,
     models::{auditorium::Auditorium, class::Class},
@@ -157,35 +159,50 @@ impl Database {
     }
     /// Insert list of auditoriums
     /// WARNING: Very memory heavy compared to other insertions
-    pub async fn insert_auditorium_many(&self, auditorium_list: &[Auditorium]) -> Result<()> {
+    pub async fn insert_auditorium_many(
+        &self,
+        auditorium_list: &[unitracker_chsu::model::auditoriums::Auditorium],
+    ) -> Result<()> {
         let params = auditorium_list;
-        let ids: Vec<i64> = params.iter().map(|au| au.id).collect();
-        let names: Vec<String> = params.iter().map(|au| au.name.clone().into()).collect();
-        let numbers: Vec<String> = params.iter().map(|au| au.number.clone().into()).collect();
-        let buildings: Vec<i64> = params
-            .iter()
-            .map(|au| au.building_id.unwrap_or_default())
+        let db_buildings: HashMap<String, i64> = self
+            .select_building_all()
+            .await?
+            .into_iter()
+            .map(|au| (au.name.into_string(), au.id))
             .collect();
-        let query = sqlx::query!(
-            r#"
-            INSERT INTO auditorium
-            (id, name, number, building_id)
-            VALUES
-            (UNNEST($1::BIGINT[]),
-            UNNEST($2::TEXT[]),
-            UNNEST($3::TEXT[]),
-            UNNEST($4::BIGINT[]))
-            "#,
-            &ids,
-            &names,
-            &numbers,
-            &buildings
-        );
 
-        query
+        println!("Buildings: {db_buildings:#?}");
+
+        let trans = self.begin().await?;
+
+        for auditorium in params {
+            let name = &auditorium.name;
+            let number = &auditorium.number;
+            let building = db_buildings.get(&auditorium.building_name);
+            let building_id = match building {
+                Some(id) => *id,
+                None => self
+                    .insert_building(&auditorium.building_name)
+                    .await
+                    .unwrap(),
+            };
+            let _ = sqlx::query!(
+                r#"
+                INSERT INTO auditorium
+                (name, number, building_id)
+                VALUES
+                ($1, $2, $3)
+                "#,
+                &name,
+                &number,
+                building_id
+            )
             .execute(self)
             .await
-            .wrap_err("Failed to insert multiple auditoriums")?;
+            .wrap_err("Failed to insert building")?;
+        }
+
+        trans.commit().await?;
         Ok(())
     }
 }

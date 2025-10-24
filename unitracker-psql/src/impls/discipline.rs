@@ -1,4 +1,5 @@
 use eyre::{Context, Result};
+use itertools::Itertools;
 
 use crate::{database::Database, models::discipline::Discipline};
 
@@ -41,12 +42,11 @@ impl Database {
         let query = sqlx::query!(
             r#"
             INSERT INTO discipline
-            (id, name)
-            VALUES ($1, $2)
-            ON CONFLICT (id) DO
+            (name)
+            VALUES ($1)
+            ON CONFLICT (name) DO
             NOTHING
             "#,
-            discipline.id,
             &discipline.name
         );
 
@@ -58,18 +58,19 @@ impl Database {
     }
     #[tracing::instrument]
     pub async fn insert_discipline_many(&self, discipline_list: &[Discipline]) -> Result<()> {
-        let (ids, names): (Vec<i64>, Vec<String>) = discipline_list
+        let names: Vec<String> = discipline_list
             .iter()
-            .map(|d| (d.id, d.name.to_string()))
-            .unzip();
+            .map(|d| d.name.to_string())
+            .sorted()
+            .dedup()
+            .collect();
         let query = sqlx::query!(
             r#"
             INSERT INTO discipline
-            (id, name)
-            SELECT * FROM UNNEST($1::bigint[], $2::text[])
-            ON CONFLICT (id) DO NOTHING;
+            (name)
+            SELECT * FROM UNNEST($1::TEXT[])
+            ON CONFLICT (name) DO NOTHING;
             "#,
-            &ids,
             &names
         );
         let _ = query.execute(self).await?;

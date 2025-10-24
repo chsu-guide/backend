@@ -41,6 +41,20 @@ impl Database {
             .await
             .wrap_err("Failed to fetch a building by name")
     }
+
+    pub async fn select_building_all(&self) -> Result<Vec<Building>> {
+        sqlx::query_as!(
+            Building,
+            r#"
+            SELECT id, name
+            FROM building
+            "#
+        )
+        .fetch_all(self)
+        .await
+        .wrap_err("Failed to fetch all buildings")
+    }
+
     #[tracing::instrument]
     pub async fn select_buildings_with_auditoriums(&self) -> Result<Vec<BuildingWithAuditoriums>> {
         let query = sqlx::query_as!(
@@ -67,43 +81,40 @@ impl Database {
     }
     /// Insert a building
     #[tracing::instrument]
-    pub async fn insert_building(&self, building: Building) -> Result<()> {
+    pub async fn insert_building(&self, building_name: &str) -> Result<i64> {
         let query = sqlx::query!(
             r#"
             INSERT INTO building
-            (id, name)
-            VALUES ($1, $2)
-            ON CONFLICT (id) DO
-            UPDATE SET
-            id = $1,
-            name = $2
+            (name)
+            VALUES ($1)
+            RETURNING id
             "#,
-            building.id,
-            &building.name
+            building_name
         );
 
-        query
-            .execute(self)
+        let res = query
+            .fetch_one(self)
             .await
-            .wrap_err("Failed to insert a building")?;
-        Ok(())
+            .wrap_err(format!("Failed to insert a building {building_name}"))?;
+        Ok(res.id)
     }
     /// Insert a list of buildings
     /// WARNING: Heavier due to splitting and unnesting
     #[tracing::instrument]
-    pub async fn insert_building_many(&self, building_list: &[Building]) -> Result<()> {
+    pub async fn insert_building_many(
+        &self,
+        building_list: &[unitracker_chsu::model::buildings::Building],
+    ) -> Result<()> {
         let params = building_list;
-        let ids: Vec<i64> = params.iter().map(|au| au.id).collect();
-        let names: Vec<String> = params.iter().map(|au| au.name.clone().into()).collect();
+        let names: Vec<_> = params.iter().map(|au| au.title.clone()).collect();
         let query = sqlx::query!(
             r#"
             INSERT INTO building
-            (id, name)
+            (name)
             VALUES
-            (UNNEST($1::BIGINT[]),
-            UNNEST($2::TEXT[]))
+            (UNNEST($1::TEXT[]))
+            ON CONFLICT DO NOTHING
             "#,
-            &ids,
             &names,
         );
 
