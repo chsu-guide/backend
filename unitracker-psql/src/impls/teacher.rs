@@ -33,7 +33,7 @@ impl Database {
             .wrap_err("Failed to fetch teachers")
     }
     #[tracing::instrument]
-    pub async fn insert_teacher(&self, teacher: &Teacher) -> Result<()> {
+    pub async fn insert_teacher(&self, teacher: &Teacher) -> Result<i64> {
         let query = sqlx::query!(
             r#"
             INSERT INTO teacher
@@ -41,6 +41,7 @@ impl Database {
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO
             NOTHING
+            RETURNING id
             "#,
             teacher.id,
             &teacher.last_name,
@@ -48,18 +49,18 @@ impl Database {
             teacher.middle_name,
         );
 
-        query
-            .execute(self)
+        let id = query
+            .fetch_one(self)
             .await
             .wrap_err("Failed to insert a class")?;
-        Ok(())
+        Ok(id.id)
     }
     #[tracing::instrument]
     pub async fn insert_teacher_many(&self, teacher_list: &[Teacher]) -> Result<()> {
         let tran = self.begin().await?;
 
         for teacher in teacher_list {
-            self.insert_teacher(teacher).await?
+            let _ = self.insert_teacher(teacher).await?;
         }
         tran.commit().await?;
 

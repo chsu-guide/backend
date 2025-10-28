@@ -37,6 +37,21 @@ impl Database {
             .wrap_err("Failed to fetch discipline")
     }
 
+    pub async fn select_discipline_by_name(&self, name: &str) -> Result<Option<Discipline>> {
+        let query = sqlx::query_as!(
+            Discipline,
+            r#"
+            SELECT id, name
+            FROM discipline
+            WHERE name = $1
+            "#,
+            name
+        );
+        query
+            .fetch_optional(self)
+            .await
+            .wrap_err("Failed to fetch discipline")
+    }
     #[tracing::instrument]
     pub async fn insert_discipline(&self, discipline: &Discipline) -> Result<()> {
         let query = sqlx::query!(

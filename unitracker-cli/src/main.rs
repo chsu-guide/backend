@@ -23,13 +23,13 @@ async fn main() -> Result<()> {
     // fill_buildings(&database, &client).await;
     // fill_teachers(&database, &client).await;
     // println!("Filled teachers\nFilling auditoriums");
-    fill_auditoriums(&database, &client).await;
+    // fill_auditoriums(&database, &client).await;
     // println!("Filled auditoriums\nFilling disciplines");
     // fill_disciplines(&database, &client).await;
     // println!("Filled disciplines\nFilling groups");
     // fill_groups(&database, &client).await;
-    // println!("Filled groups\nFilling classes");
-    // fill_classes(&database, &client).await;
+    println!("Filled groups\nFilling classes");
+    fill_classes(&database, &client).await;
     Ok(())
 }
 
@@ -60,17 +60,19 @@ async fn fill_buildings(database: &Database, client: &ChsuClient) {
 }
 
 async fn fill_disciplines(database: &Database, client: &ChsuClient) {
-    info!("Filling disciplines");
+    println!("Filling disciplines");
     let api_disciplines = client.get_disciplines().await.unwrap();
+    println!("Got api response");
     let db_disciplines: Vec<_> = api_disciplines
         .iter()
         .map(|f| unitracker_psql::models::discipline::Discipline::from(f.clone()))
         .collect();
+    println!("Converted to db structures");
     database
         .insert_discipline_many(&db_disciplines)
         .await
         .unwrap();
-    info!("Filled disciplines");
+    println!("Filled disciplines");
 }
 
 async fn fill_groups(database: &Database, client: &ChsuClient) {
@@ -83,19 +85,19 @@ async fn fill_groups(database: &Database, client: &ChsuClient) {
 
 #[tracing::instrument]
 async fn fill_classes(database: &Database, client: &ChsuClient) {
-    info!("starting class population");
+    println!("starting class population");
     let api_classes = client
         .get_schedule(
             ScheduleRequestBuilder::new()
                 .start(
                     Utc::now()
-                        .checked_add_days(Days::new(2))
+                        .checked_add_days(Days::new(8))
                         .unwrap()
                         .date_naive(),
                 )
                 .end(
                     Utc::now()
-                        .checked_add_days(Days::new(7))
+                        .checked_add_days(Days::new(22))
                         .unwrap()
                         .date_naive(),
                 )
@@ -104,7 +106,7 @@ async fn fill_classes(database: &Database, client: &ChsuClient) {
         )
         .await
         .unwrap();
-    info!("Got {} classes", api_classes.len());
+    println!("Got {} classes", api_classes.len());
     database.populate_classes(&api_classes).await.unwrap();
-    info!("populated classes");
+    println!("populated classes");
 }

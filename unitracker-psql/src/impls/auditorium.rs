@@ -28,6 +28,22 @@ impl Database {
             .wrap_err("Failed to fetch auditorium")
     }
 
+    pub async fn select_auditorium_all(&self) -> Result<Vec<Auditorium>> {
+        let query = sqlx::query_as!(
+            Auditorium,
+            r#"
+            SELECT
+                auditorium.id, auditorium.name, auditorium.number, building_id
+            FROM auditorium
+            INNER JOIN building ON auditorium.building_id = building.id
+            "#,
+        );
+        query
+            .fetch_all(self)
+            .await
+            .wrap_err("Failed to fetch auditoriums")
+    }
+
     pub async fn select_auditorium_by_building_all(&self, id: i64) -> Result<Vec<Auditorium>> {
         let query = sqlx::query_as!(
             Auditorium,
@@ -192,6 +208,7 @@ impl Database {
                 (name, number, building_id)
                 VALUES
                 ($1, $2, $3)
+                ON CONFLICT DO NOTHING
                 "#,
                 &name,
                 &number,
@@ -199,7 +216,7 @@ impl Database {
             )
             .execute(self)
             .await
-            .wrap_err("Failed to insert building")?;
+            .wrap_err("Failed to insert auditorium")?;
         }
 
         trans.commit().await?;

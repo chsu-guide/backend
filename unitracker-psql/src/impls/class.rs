@@ -1,10 +1,15 @@
+use std::collections::HashMap;
+
 use chrono::NaiveDateTime;
-use eyre::{Context, Result, bail};
+use eyre::{Context, OptionExt, Result, bail};
 use tracing::{Level, info, warn};
 use unitracker_chsu::model::schedule::Schedule;
 use unitracker_types::IdOrName;
 
-use crate::{database::Database, models::class::Class};
+use crate::{
+    database::Database,
+    models::{class::Class, discipline, teacher::Teacher},
+};
 
 impl Database {
     /// Select a Class by ID
@@ -216,7 +221,19 @@ impl Database {
             .wrap_err("Failed to fetch classes")
     }
     /// Insert a class
-    pub async fn insert_class(&self, class: &Class) -> Result<()> {
+    pub async fn insert_class(&self, class: &Class, discipline: &str) -> Result<()> {
+        let disc = self.select_discipline_by_name(discipline).await?;
+        let d = match disc {
+            Some(d) => d,
+            None => {
+                self.insert_discipline(&discipline::Discipline {
+                    id: 0,
+                    name: discipline.clone().into(),
+                })
+                .await?;
+                self.select_discipline_by_name(discipline).await?.unwrap()
+            }
+        };
         let query = sqlx::query!(
             r#"
             INSERT INTO schedule
@@ -231,7 +248,7 @@ impl Database {
             class.end_time,
             &class.lesson_type,
             class.lesson_type_abbreviated,
-            class.discipline_id
+            d.id
         );
 
         let res = query.execute(self).await;
@@ -294,31 +311,81 @@ impl Database {
     // WARNING: Very heavy on RAM due to unnesting
     pub async fn populate_classes(&self, schedule: &[Schedule]) -> Result<()> {
         for s in schedule {
-            self.insert_class(&Class::from(s.to_owned())).await?;
+            self.insert_class(
+                &Class::from(s.to_owned()),
+                &s.discipline.as_ref().map(|d| d.title.clone()).unwrap(),
+            )
+            .await?;
         }
+        let teachers: HashMap<(Box<str>, Box<str>), i64> = self
+            .select_teacher_all()
+            .await?
+            .into_iter()
+            .map(|t| ((t.last_name, t.first_name), t.id))
+            .collect();
+
+        let teacher_ref = &teachers;
+
         let schedule_teacher_pairs = schedule
             .iter()
             .filter(|s| s.lecturers.is_some())
             .map(|s| (s.id, s.lecturers.as_ref().unwrap()))
-            .flat_map(|s| s.1.iter().map(move |val| (s.0, val.id)));
+            .flat_map(|(id, teach)| {
+                teach.into_iter().map(move |t| {
+                    (
+                        id,
+                        teacher_ref.get(&(
+                            t.last_name.clone().into_boxed_str(),
+                            t.first_name.clone().into_boxed_str(),
+                        )),
+                    )
+                })
+            });
+        // .flat_map(|s| {
+        //     s.1.into_iter().map(move |val| async {
+        //         (
+        //             s.0.clone(),
+        //             teacher_ref
+        //                 .get(&(
+        //                     val.last_name.clone().into_boxed_str(),
+        //                     val.first_name.clone().into_boxed_str(),
+        //                 ))
+        //                 .map(Clone::clone)
+        //                 .unwrap_or(
+        //                     self.insert_teacher(&Teacher {
+        //                         id: val.id,
+        //                         last_name: val.last_name.clone().into_boxed_str(),
+        //                         first_name: val.first_name.clone().into_boxed_str(),
+        //                         middle_name: val.middle_name.clone(),
+        //                     })
+        //                     .await
+        //                     .unwrap(),
+        //                 ),
+        //         )
+        //     })
+        // });
+
         let transaction = self.begin().await?;
         println!("Started importing schedule_teachers:");
-        for (sched, teach) in schedule_teacher_pairs {
-            let _ = sqlx::query!(
-                r#"
+        for (id, teacher) in schedule_teacher_pairs {
+            if let Some(t) = teacher {
+                let _ = sqlx::query!(
+                    r#"
                 INSERT INTO schedule_teacher
                 (schedule_id, teacher_id)
                 VALUES ($1, $2)
                 ON CONFLICT DO NOTHING
                 "#,
-                sched,
-                teach
-            )
-            .execute(self)
-            .await
-            .wrap_err("Failed to insert schedule-teacher pair")?;
+                    id,
+                    t
+                )
+                .execute(self)
+                .await
+                .wrap_err("Failed to insert schedule-teacher pair")?;
+            }
         }
         transaction.commit().await?;
+
         let schedule_group_pairs = schedule
             .iter()
             .flat_map(|s| s.groups.iter().map(move |val| (s.id, val.id)));
@@ -348,12 +415,24 @@ impl Database {
             .filter(|s| s.lecturers.is_some())
             .collect();
         println!("Started importing schedule_auditorium:");
+
+        let auditoriums: HashMap<_, _> = self
+            .select_auditorium_all()
+            .await?
+            .into_iter()
+            .map(|a| (a.name, a.id))
+            .collect();
+
         let transaction = self.begin().await?;
         for s in filtered {
+            let aud = s
+                .auditory
+                .as_ref()
+                .and_then(|a| auditoriums.get(&a.title.as_ref().unwrap().clone().into_boxed_str()));
             let s_a = sqlx::query!(
                 "INSERT INTO schedule_auditorium (schedule_id, auditorium_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
                 s.id,
-                s.auditory.as_ref().unwrap().id
+                aud as Option<&i64>
             )
             .execute(self)
             .await;
@@ -366,7 +445,11 @@ impl Database {
                     );
                 }
             }
-            self.insert_class(&Class::from(s.to_owned())).await?;
+            self.insert_class(
+                &Class::from(s.to_owned()),
+                &s.discipline.as_ref().map(|d| d.title.clone()).unwrap(),
+            )
+            .await?;
         }
         transaction.commit().await?;
 

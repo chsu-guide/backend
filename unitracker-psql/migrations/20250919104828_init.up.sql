@@ -188,7 +188,7 @@ create table schedule_teacher
     schedule_id bigint not null
         constraint schedule_fk
             references schedule,
-    teacher_id  bigint not null
+    teacher_id  bigint
         constraint teacher_fk
             references teacher,
     constraint schedule_teacher_pk
