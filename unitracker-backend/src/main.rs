@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::Router;
 use eyre::Context as _;
 use tokio::signal;
+use tower_http::trace::TraceLayer;
 use tracing::{Level, info};
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 use unitracker_server::context::{Context, ContextParameters};
@@ -13,12 +14,18 @@ use crate::routes::{
     metadata, mixed, schedule, statistics,
 };
 
+fn create_trace_layer()
+-> TraceLayer<tower_http::classify::SharedClassifier<tower_http::classify::ServerErrorsAsFailures>>
+{
+    TraceLayer::new_for_http()
+}
+
 pub mod routes;
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     dotenvy::dotenv().unwrap();
     let filter = filter::Targets::new()
-        .with_target("unitracker-psql", Level::TRACE)
+        .with_target("unitracker-psql", Level::INFO)
         .with_target("sqlx", Level::INFO)
         .with_target("reqwest", Level::INFO)
         .with_target("axum", Level::INFO)
@@ -39,13 +46,15 @@ async fn main() -> eyre::Result<()> {
         .merge(mixed::mixed_router())
         .merge(health::health_router())
         .merge(metadata::metadata_router())
-        .with_state(Arc::new(
-            Context::init(ContextParameters {
-                connection_string: "postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db"
-                    .to_string(),
-            })
-            .await,
-        ));
+        .layer(create_trace_layer());
+
+    let app = Router::new().nest("/api", app).with_state(Arc::new(
+        Context::init(ContextParameters {
+            connection_string: "postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db"
+                .to_string(),
+        })
+        .await,
+    ));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4321").await.unwrap();
     info!(

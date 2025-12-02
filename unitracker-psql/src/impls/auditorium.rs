@@ -187,8 +187,6 @@ impl Database {
             .map(|au| (au.name.into_string(), au.id))
             .collect();
 
-        println!("Buildings: {db_buildings:#?}");
-
         let trans = self.begin().await?;
 
         for auditorium in params {

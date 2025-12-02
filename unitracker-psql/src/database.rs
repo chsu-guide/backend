@@ -1,4 +1,4 @@
-use eyre::Result;
+use eyre::{Context, Result};
 use futures::{future::BoxFuture, stream::BoxStream};
 use sqlx::{
     Describe, Either, Error as SqlxError, Execute, Executor, PgPool, Postgres, Transaction,
@@ -30,6 +30,12 @@ impl Database {
     /// Retrieves a connection and immediately begins a new transaction.
     pub(crate) async fn begin(&self) -> Result<Transaction<'static, Postgres>, SqlxError> {
         self.pool.begin().await
+    }
+    pub async fn migrate(&self) -> eyre::Result<()> {
+        sqlx::migrate!()
+            .run(&self.pool)
+            .await
+            .wrap_err("Failed to migrate")
     }
 }
 impl<'d, 'p> Executor<'p> for &'d Database {

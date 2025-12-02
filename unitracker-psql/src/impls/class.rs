@@ -1,16 +1,211 @@
 use std::collections::HashMap;
 
 use chrono::NaiveDateTime;
-use eyre::{Context, OptionExt, Result, bail};
+use eyre::{Context, OptionExt, Result, bail, eyre};
+use itertools::Itertools;
+use sqlx::{QueryBuilder, query::QueryAs};
 use tracing::{Level, info, warn};
 use unitracker_chsu::model::schedule::Schedule;
 use unitracker_types::IdOrName;
 
 use crate::{
     database::Database,
-    models::{class::Class, discipline, teacher::Teacher},
+    models::{
+        auditorium::Auditorium,
+        class::Class,
+        discipline,
+        dtos::class::{AuditoriumShort, Class as DtoClass, ClassPartial, TeacherShort},
+        group::{Group, GroupShort},
+        teacher::Teacher,
+    },
 };
 
+const BASE_STUDENT_SELECT: &'static str = r#"
+SELECT s.id, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated,
+    d.name AS discipline_name
+FROM schedule s
+INNER JOIN discipline d ON s.discipline_id = d.id
+INNER JOIN schedule_group sg ON s.id = sg.schedule_id
+INNER JOIN student_group g ON sg.group_id = g.id
+"#;
+
+const BASE_TEACHER_SELECT: &'static str = r#"
+SELECT s.id, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated,
+    d.name AS discipline_name
+FROM schedule s
+INNER JOIN discipline d ON s.discipline_id = d.id
+INNER JOIN schedule_teacher st ON s.id = st.schedule_id
+INNER JOIN teacher t ON st.teacher_id = t.id
+"#;
+
+const BASE_AUDITORIUM_SELECT: &'static str = r#"
+SELECT s.id, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated,
+    d.name AS discipline_name
+FROM schedule s
+INNER JOIN discipline d ON s.discipline_id = d.id
+INNER JOIN schedule_auditorium sa ON s.id = sa.schedule_id
+INNER JOIN auditorium a ON sa.auditorium_id = a.id
+"#;
+macro_rules! impl_student_query_variant {
+    ($fn_name:ident, $query_type:ty, $query_subst:literal) => {
+        #[tracing::instrument]
+        async fn $fn_name(
+            &self,
+            id: $query_type,
+            start: NaiveDateTime,
+            end: NaiveDateTime,
+        ) -> Result<Vec<DtoClass>> {
+            let mut qb = QueryBuilder::new(BASE_STUDENT_SELECT);
+            let qb = qb.push($query_subst);
+            let query = qb.build_query_as().bind(id).bind(start).bind(end);
+            let data: Vec<ClassPartial> = query
+                .fetch_all(self)
+                .await
+                .wrap_err("Failed to fetch classes")
+                .unwrap();
+
+            if data.is_empty() {
+                return Ok(vec![]);
+            }
+            let schedule_ids: Vec<i64> = data.iter().map(|s| s.id).collect();
+
+            let mut teacher_map: HashMap<i64, Vec<TeacherShort>> =
+                self.select_teachers_with_class_list(&schedule_ids).await;
+
+            let mut auditoriums_map: HashMap<i64, Vec<Auditorium>> =
+                self.select_auditoriums_with_class_list(&schedule_ids).await;
+            let mut list: Vec<DtoClass> = data
+                .into_iter()
+                .map(|c| DtoClass {
+                    id: c.id,
+                    start_time: c.start_time,
+                    end_time: c.end_time,
+                    lesson_type: c.lesson_type,
+                    lesson_type_abbreviated: c.lesson_type_abbreviated,
+                    discipline_name: c.discipline_name,
+                    auditorium_name: auditoriums_map
+                        .remove(&c.id)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|a| AuditoriumShort {
+                            name: a.name,
+                            number: a.number,
+                            building_id: a.building_id,
+                        })
+                        .collect(),
+                    teacher_name: teacher_map.remove(&c.id).unwrap_or_default(),
+                    group_list: vec![],
+                })
+                .collect();
+            list.sort_unstable_by_key(|c| c.start_time);
+            Ok(list)
+        }
+    };
+}
+macro_rules! impl_teacher_query_variant {
+    ($fn_name:ident, $query_type:ty, $query_subst:literal) => {
+        #[tracing::instrument]
+        async fn $fn_name(
+            &self,
+            id: $query_type,
+            start: NaiveDateTime,
+            end: NaiveDateTime,
+        ) -> Result<Vec<DtoClass>> {
+            let mut qb = QueryBuilder::new(BASE_TEACHER_SELECT);
+            let qb = qb.push($query_subst);
+            let query = qb.build_query_as().bind(id).bind(start).bind(end);
+            let data: Vec<ClassPartial> = query
+                .fetch_all(self)
+                .await
+                .wrap_err("Failed to fetch classes")
+                .unwrap();
+
+            if data.is_empty() {
+                return Ok(vec![]);
+            }
+            let schedule_ids: Vec<i64> = data.iter().map(|s| s.id).collect();
+
+            let mut group_map: HashMap<i64, Vec<GroupShort>> =
+                self.select_groups_with_class_list(&schedule_ids).await;
+
+            let mut auditoriums_map: HashMap<i64, Vec<Auditorium>> =
+                self.select_auditoriums_with_class_list(&schedule_ids).await;
+            let mut list: Vec<DtoClass> = data
+                .into_iter()
+                .map(|c| DtoClass {
+                    id: c.id,
+                    start_time: c.start_time,
+                    end_time: c.end_time,
+                    lesson_type: c.lesson_type,
+                    lesson_type_abbreviated: c.lesson_type_abbreviated,
+                    discipline_name: c.discipline_name,
+                    auditorium_name: auditoriums_map
+                        .remove(&c.id)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|a| AuditoriumShort {
+                            name: a.name,
+                            number: a.number,
+                            building_id: a.building_id,
+                        })
+                        .collect(),
+                    group_list: group_map.remove(&c.id).unwrap_or_default(),
+                    teacher_name: vec![],
+                })
+                .collect();
+            list.sort_unstable_by_key(|c| c.start_time);
+            Ok(list)
+        }
+    };
+}
+
+macro_rules! impl_auditorium_query_variant {
+    ($fn_name:ident, $query_type:ty, $query_subst:literal) => {
+        #[tracing::instrument]
+        pub async fn $fn_name(
+            &self,
+            id: $query_type,
+            start: NaiveDateTime,
+            end: NaiveDateTime,
+        ) -> Result<Vec<DtoClass>> {
+            let mut qb = QueryBuilder::new(BASE_AUDITORIUM_SELECT);
+            let qb = qb.push($query_subst);
+            let query = qb.build_query_as().bind(id).bind(start).bind(end);
+            let data: Vec<ClassPartial> = query
+                .fetch_all(self)
+                .await
+                .wrap_err("Failed to fetch classes")
+                .unwrap();
+
+            if data.is_empty() {
+                return Ok(vec![]);
+            }
+            let schedule_ids: Vec<i64> = data.iter().map(|s| s.id).collect();
+
+            let mut group_map: HashMap<i64, Vec<GroupShort>> =
+                self.select_groups_with_class_list(&schedule_ids).await;
+
+            let mut teacher_map: HashMap<i64, Vec<TeacherShort>> =
+                self.select_teachers_with_class_list(&schedule_ids).await;
+            let mut list: Vec<DtoClass> = data
+                .into_iter()
+                .map(|c| DtoClass {
+                    id: c.id,
+                    start_time: c.start_time,
+                    end_time: c.end_time,
+                    lesson_type: c.lesson_type,
+                    lesson_type_abbreviated: c.lesson_type_abbreviated,
+                    discipline_name: c.discipline_name,
+                    auditorium_name: vec![],
+                    group_list: group_map.remove(&c.id).unwrap_or_default(),
+                    teacher_name: teacher_map.remove(&c.id).unwrap_or_default(),
+                })
+                .collect();
+            list.sort_unstable_by_key(|c| c.start_time);
+            Ok(list)
+        }
+    };
+}
 impl Database {
     /// Select a Class by ID
     #[tracing::instrument]
@@ -34,7 +229,7 @@ impl Database {
         group: IdOrName,
         start: NaiveDateTime,
         end: NaiveDateTime,
-    ) -> Result<Vec<Class>> {
+    ) -> Result<Vec<DtoClass>> {
         match group {
             IdOrName::Id(id) => {
                 self.select_class_by_group_id_with_timestamps(id, start, end)
@@ -46,58 +241,138 @@ impl Database {
             }
         }
     }
-    /// Select a list of classes by group ID within a certain range of dates
-    #[tracing::instrument]
-    async fn select_class_by_group_id_with_timestamps(
-        &self,
-        id: i64,
-        start: NaiveDateTime,
-        end: NaiveDateTime,
-    ) -> Result<Vec<Class>> {
-        let query = sqlx::query_as!(
-            Class,
-            r#"
-            SELECT s.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
-            FROM schedule s
-            JOIN schedule_group sg ON s.id = sg.schedule_id
-            JOIN student_group g ON sg.group_id = g.id
-            WHERE g.id = $1 AND start_time > $2 AND end_time < $3
-            "#,
-            id,
-            start,
-            end
-        );
-        query
-            .fetch_all(self)
-            .await
-            .wrap_err("Failed to fetch classes")
-    }
-    /// Select a list of classes by group name within a certain date range
-    #[tracing::instrument]
-    async fn select_class_by_group_name_with_timestamps(
-        &self,
-        name: String,
-        start: NaiveDateTime,
-        end: NaiveDateTime,
-    ) -> Result<Vec<Class>> {
-        let query = sqlx::query_as!(
-            Class,
-            r#"
-            SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id
-            FROM schedule
-            INNER JOIN discipline ON schedule.discipline_id = discipline.id
-            JOIN schedule_group sg ON schedule.id = sg.schedule_id
-            JOIN student_group g ON sg.group_id = g.id
-            WHERE g.name = $1 AND start_time > $2 AND end_time < $3
-            "#,
-            name,
-            start,
-            end
-        );
-        let res = query.fetch_all(self).await;
-        info!("result: {res:?}");
 
-        res.wrap_err("Failed to fetch classes")
+    pub async fn select_class_by_teacher_with_timestamps(
+        &self,
+        teacher: IdOrName,
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    ) -> Result<Vec<DtoClass>> {
+        match teacher {
+            IdOrName::Id(id) => {
+                self.select_class_by_teacher_id_with_timestamps(id, start, end)
+                    .await
+            }
+            IdOrName::Name(name) => {
+                self.select_class_by_teacher_name_with_timestamps(name, start, end)
+                    .await
+            }
+        }
+    }
+    impl_student_query_variant!(
+        select_class_by_group_id_with_timestamps,
+        i64,
+        "WHERE g.id = $1 AND start_time > $2 AND end_time < $3"
+    );
+    impl_student_query_variant!(
+        select_class_by_group_name_with_timestamps,
+        String,
+        "WHERE g.name = $1 AND start_time > $2 AND end_time < $3"
+    );
+    impl_teacher_query_variant!(
+        select_class_by_teacher_id_with_timestamps,
+        i64,
+        "WHERE t.id = $1 AND start_time > $2 AND end_time < $3"
+    );
+    impl_teacher_query_variant!(
+        select_class_by_teacher_name_with_timestamps,
+        String,
+        "WHERE t.name = $1 AND start_time > $2 AND end_time < $3"
+    );
+    impl_auditorium_query_variant!(
+        select_class_by_auditorium_id_with_timestamps,
+        i64,
+        "WHERE a.id = $1 AND start_time > $2 AND end_time < $3"
+    );
+    async fn select_auditoriums_with_class_list(
+        &self,
+        list: &[i64],
+    ) -> HashMap<i64, Vec<Auditorium>> {
+        let auditoriums: Vec<Auditorium> = sqlx::query_as(
+            "SELECT sa.schedule_id AS id, a.name, a.number, a.building_id
+                 FROM schedule_auditorium sa
+                 INNER JOIN auditorium a ON sa.auditorium_id = a.id
+                 WHERE sa.schedule_id = ANY($1)",
+        )
+        .bind(&list)
+        .fetch_all(self)
+        .await
+        .unwrap();
+        let mut auditoriums_map: HashMap<i64, Vec<Auditorium>> = HashMap::new();
+        for auditorium in auditoriums {
+            auditoriums_map
+                .entry(auditorium.id)
+                .or_insert_with(Vec::new)
+                .push(auditorium);
+        }
+        auditoriums_map
+    }
+    async fn select_teachers_with_class_list(
+        &self,
+        list: &[i64],
+    ) -> HashMap<i64, Vec<TeacherShort>> {
+        let teachers: Vec<Teacher> = sqlx::query_as(
+            r#"SELECT st.schedule_id AS id, t.last_name, t.first_name, t.middle_name
+            FROM schedule_teacher st
+            INNER JOIN teacher t ON st.teacher_id = t.id
+            WHERE st.schedule_id = ANY($1)
+            "#,
+        )
+        .bind(&list)
+        .fetch_all(self)
+        .await
+        .wrap_err("Failed to fetch teachers for classes")
+        .unwrap();
+
+        let mut teacher_map: HashMap<i64, Vec<TeacherShort>> = HashMap::new();
+        for teacher in teachers {
+            teacher_map
+                .entry(teacher.id)
+                .or_insert_with(Vec::new)
+                .push(TeacherShort {
+                    last_name: teacher.last_name,
+                    first_name: teacher.first_name,
+                    middle_name: teacher.middle_name.unwrap_or_default().into_boxed_str(),
+                });
+        }
+        teacher_map
+    }
+
+    async fn select_groups_with_class_list(&self, list: &[i64]) -> HashMap<i64, Vec<GroupShort>> {
+        let teachers: Vec<GroupShort> = sqlx::query_as(
+            r#"
+            SELECT g.id, name, course
+            FROM schedule_group sg
+            INNER JOIN student_group g ON sg.group_id = g.id
+            WHERE sg.group_id = ANY($1)
+            "#,
+        )
+        .bind(&list)
+        .fetch_all(self)
+        .await
+        .wrap_err("Failed to fetch groups for classes")
+        .unwrap();
+
+        let mut teacher_map: HashMap<i64, Vec<GroupShort>> = HashMap::new();
+        for teacher in teachers {
+            teacher_map
+                .entry(teacher.id)
+                .or_insert_with(Vec::new)
+                .push(GroupShort {
+                    id: teacher.id,
+                    name: teacher.name,
+                    course: teacher.course,
+                });
+        }
+        teacher_map
+    }
+    pub async fn select_class_by_teacher(
+        &self,
+        teacher: IdOrName,
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    ) -> Result<Vec<DtoClass>> {
+        todo!()
     }
     /// Select a class by group and discipline
     #[tracing::instrument(
@@ -228,7 +503,7 @@ impl Database {
             None => {
                 self.insert_discipline(&discipline::Discipline {
                     id: 0,
-                    name: discipline.clone().into(),
+                    name: discipline.into(),
                 })
                 .await?;
                 self.select_discipline_by_name(discipline).await?.unwrap()
@@ -310,7 +585,7 @@ impl Database {
     // Mass-insert classes and related entities
     // WARNING: Very heavy on RAM due to unnesting
     pub async fn populate_classes(&self, schedule: &[Schedule]) -> Result<()> {
-        for s in schedule {
+        for s in schedule.iter().dedup_by(|lhs, rhs| lhs.id.eq(&rhs.id)) {
             self.insert_class(
                 &Class::from(s.to_owned()),
                 &s.discipline.as_ref().map(|d| d.title.clone()).unwrap(),
@@ -340,7 +615,8 @@ impl Database {
                         )),
                     )
                 })
-            });
+            })
+            .dedup();
         // .flat_map(|s| {
         //     s.1.into_iter().map(move |val| async {
         //         (
@@ -366,7 +642,6 @@ impl Database {
         // });
 
         let transaction = self.begin().await?;
-        println!("Started importing schedule_teachers:");
         for (id, teacher) in schedule_teacher_pairs {
             if let Some(t) = teacher {
                 let _ = sqlx::query!(
@@ -388,9 +663,9 @@ impl Database {
 
         let schedule_group_pairs = schedule
             .iter()
-            .flat_map(|s| s.groups.iter().map(move |val| (s.id, val.id)));
+            .flat_map(|s| s.groups.iter().map(move |val| (s.id, val.id)))
+            .dedup();
 
-        println!("Started importing schedule_group:");
         let transaction = self.begin().await?;
         for (sched, group) in schedule_group_pairs {
             let _ = sqlx::query!(
@@ -413,14 +688,15 @@ impl Database {
             .filter(|s| s.auditory.is_some())
             .filter(|s| s.discipline.is_some())
             .filter(|s| s.lecturers.is_some())
+            .dedup_by(|lhs, rhs| lhs.id.eq(&rhs.id))
             .collect();
-        println!("Started importing schedule_auditorium:");
 
         let auditoriums: HashMap<_, _> = self
             .select_auditorium_all()
             .await?
             .into_iter()
             .map(|a| (a.name, a.id))
+            .dedup()
             .collect();
 
         let transaction = self.begin().await?;

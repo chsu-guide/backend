@@ -1,4 +1,5 @@
 use eyre::Context;
+use sqlx::migrate::Migrator;
 
 use crate::database::Database;
 

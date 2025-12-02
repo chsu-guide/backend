@@ -1,6 +1,7 @@
+use sqlx::prelude::FromRow;
 use unitracker_chsu::model::teachers;
 
-#[derive(Debug)]
+#[derive(Debug, FromRow)]
 pub struct Teacher {
     pub id: i64,
     pub last_name: Box<str>,

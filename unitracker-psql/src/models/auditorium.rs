@@ -1,4 +1,7 @@
+use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 use unitracker_chsu::model::auditoriums;
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Auditorium {
     pub id: i64,
     pub name: Box<str>,

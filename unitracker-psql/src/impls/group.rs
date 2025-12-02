@@ -74,7 +74,7 @@ impl Database {
             .map(|g| (g.chair.id, g.chair.title.clone()))
             .dedup_by(|lhs, rhs| lhs.0 == rhs.0)
             .unzip();
-        let query = sqlx::query!(
+        let _ = sqlx::query!(
             r#"
             INSERT INTO chair
             (id, name)
@@ -86,14 +86,13 @@ impl Database {
         )
         .execute(self)
         .await?;
-        println!("Inserted {:?} chairs", query);
 
         let (faculty_id, faculty_name): (Vec<_>, Vec<_>) = group_list
             .iter()
             .map(|g| (g.faculty.id, g.faculty.title.clone()))
             .dedup_by(|lhs, rhs| lhs.0 == rhs.0)
             .unzip();
-        let query = sqlx::query!(
+        let _ = sqlx::query!(
             r#"
             INSERT INTO faculty
             (id, name)
@@ -106,7 +105,6 @@ impl Database {
         .execute(self)
         .await?;
 
-        println!("Inserted {:?} faculties", query);
         let (group_id, group_title, group_course, group_faculty_id, group_chair_id): (
             Vec<_>,
             Vec<_>,
