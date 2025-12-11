@@ -25,11 +25,8 @@ async fn main() -> Result<()> {
     database.migrate().await?;
     fill_buildings(&database, &client).await;
     fill_teachers(&database, &client).await;
-    // println!("Filled teachers\nFilling auditoriums");
     fill_auditoriums(&database, &client).await;
-    // println!("Filled auditoriums\nFilling disciplines");
     fill_disciplines(&database, &client).await;
-    // println!("Filled disciplines\nFilling groups");
     fill_groups(&database, &client).await;
     fill_classes(&database, &client).await;
     Ok(())

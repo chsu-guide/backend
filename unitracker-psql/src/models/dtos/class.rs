@@ -34,6 +34,7 @@ pub struct AuditoriumShort {
     pub name: Box<str>,
     pub number: Box<str>,
     pub building_id: Option<i64>,
+    pub building_name: Option<String>,
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]

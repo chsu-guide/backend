@@ -74,6 +74,12 @@ macro_rules! impl_student_query_variant {
 
             let mut auditoriums_map: HashMap<i64, Vec<Auditorium>> =
                 self.select_auditoriums_with_class_list(&schedule_ids).await;
+            let mut building_map: HashMap<i64, String> = self
+                .select_building_all()
+                .await?
+                .into_iter()
+                .map(|b| (b.id, b.name.to_string()))
+                .collect();
             let mut list: Vec<DtoClass> = data
                 .into_iter()
                 .map(|c| DtoClass {
@@ -91,6 +97,11 @@ macro_rules! impl_student_query_variant {
                             name: a.name,
                             number: a.number,
                             building_id: a.building_id,
+                            building_name: if let Some(bid) = a.building_id {
+                                building_map.get(&bid).map(<_>::to_owned)
+                            } else {
+                                None
+                            },
                         })
                         .collect(),
                     teacher_name: teacher_map.remove(&c.id).unwrap_or_default(),
@@ -130,6 +141,14 @@ macro_rules! impl_teacher_query_variant {
 
             let mut auditoriums_map: HashMap<i64, Vec<Auditorium>> =
                 self.select_auditoriums_with_class_list(&schedule_ids).await;
+
+            let mut building_map: HashMap<i64, String> = self
+                .select_building_all()
+                .await?
+                .into_iter()
+                .map(|b| (b.id, b.name.to_string()))
+                .collect();
+
             let mut list: Vec<DtoClass> = data
                 .into_iter()
                 .map(|c| DtoClass {
@@ -147,6 +166,11 @@ macro_rules! impl_teacher_query_variant {
                             name: a.name,
                             number: a.number,
                             building_id: a.building_id,
+                            building_name: if let Some(bid) = a.building_id {
+                                building_map.get(&bid).map(<_>::to_owned)
+                            } else {
+                                None
+                            },
                         })
                         .collect(),
                     group_list: group_map.remove(&c.id).unwrap_or_default(),
@@ -277,7 +301,7 @@ impl Database {
     impl_teacher_query_variant!(
         select_class_by_teacher_name_with_timestamps,
         String,
-        "WHERE t.name = $1 AND start_time > $2 AND end_time < $3"
+        "WHERE concat(t.last_name, ' ', t.first_name, ' ', t.middle_name) = $1 AND start_time > $2 AND end_time < $3"
     );
     impl_auditorium_query_variant!(
         select_class_by_auditorium_id_with_timestamps,
@@ -691,24 +715,70 @@ impl Database {
             .dedup_by(|lhs, rhs| lhs.id.eq(&rhs.id))
             .collect();
 
+        let auditorium_pre_data: HashMap<_, _> = schedule
+            .iter()
+            .filter(|sc| sc.auditory.is_some())
+            .map(|schedule_item| {
+                (
+                    schedule_item.id,
+                    (
+                        schedule_item.auditory.as_ref().unwrap().id,
+                        schedule_item.auditory.as_ref().unwrap().title.clone(),
+                        schedule_item.build.as_ref().unwrap().id,
+                        schedule_item.build.as_ref().unwrap().title.clone(),
+                    ),
+                )
+            })
+            .collect();
+
         let auditoriums: HashMap<_, _> = self
             .select_auditorium_all()
             .await?
             .into_iter()
-            .map(|a| (a.name, a.id))
+            .map(|a| ((a.number, a.building_id.unwrap_or_default()), a.id))
             .dedup()
+            .collect();
+
+        // for ((name, bid), id) in &auditoriums {
+        // println!("name {name} in {bid} with id {id}");
+        // }
+        // panic!();
+
+        let buildings: HashMap<_, _> = self
+            .select_building_all()
+            .await
+            .unwrap()
+            .iter()
+            .map(|b| (b.name.clone(), b.id))
             .collect();
 
         let transaction = self.begin().await?;
         for s in filtered {
-            let aud = s
-                .auditory
-                .as_ref()
-                .and_then(|a| auditoriums.get(&a.title.as_ref().unwrap().clone().into_boxed_str()));
+            let auditorium_data = auditorium_pre_data.get(&s.id);
+            // dbg!(auditorium_data);
+            if let None = auditorium_data {
+                continue;
+            }
+            let (api_aud_id, api_aud_title, api_build_id, api_build_title) =
+                auditorium_data.unwrap();
+            let inner_building = buildings.get(api_build_title.clone().into_boxed_str().as_ref());
+            // dbg!(inner_building);
+            if let None = inner_building {
+                continue;
+            }
+            let auditorium = auditoriums.get(&(
+                api_aud_title.clone().unwrap().into_boxed_str(),
+                *inner_building.unwrap(),
+            ));
+            if let None = auditorium {
+                continue;
+            }
+            let auditorium = auditorium.unwrap();
+
             let s_a = sqlx::query!(
                 "INSERT INTO schedule_auditorium (schedule_id, auditorium_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
                 s.id,
-                aud as Option<&i64>
+                auditorium
             )
             .execute(self)
             .await;
@@ -721,11 +791,11 @@ impl Database {
                     );
                 }
             }
-            self.insert_class(
-                &Class::from(s.to_owned()),
-                &s.discipline.as_ref().map(|d| d.title.clone()).unwrap(),
-            )
-            .await?;
+            // self.insert_class(
+            //     &Class::from(s.to_owned()),
+            //     &s.discipline.as_ref().map(|d| d.title.clone()).unwrap(),
+            // )
+            // .await?;
         }
         transaction.commit().await?;
 
