@@ -69,6 +69,9 @@ macro_rules! impl_student_query_variant {
             }
             let schedule_ids: Vec<i64> = data.iter().map(|s| s.id).collect();
 
+            let mut group_map: HashMap<i64, Vec<GroupShort>> =
+                self.select_groups_with_class_list(&schedule_ids).await;
+
             let mut teacher_map: HashMap<i64, Vec<TeacherShort>> =
                 self.select_teachers_with_class_list(&schedule_ids).await;
 
@@ -105,7 +108,7 @@ macro_rules! impl_student_query_variant {
                         })
                         .collect(),
                     teacher_name: teacher_map.remove(&c.id).unwrap_or_default(),
-                    group_list: vec![],
+                    group_list: group_map.remove(&c.id).unwrap_or_default(),
                 })
                 .collect();
             list.sort_unstable_by_key(|c| c.start_time);
@@ -142,6 +145,9 @@ macro_rules! impl_teacher_query_variant {
             let mut auditoriums_map: HashMap<i64, Vec<Auditorium>> =
                 self.select_auditoriums_with_class_list(&schedule_ids).await;
 
+            let mut teacher_map: HashMap<i64, Vec<TeacherShort>> =
+                self.select_teachers_with_class_list(&schedule_ids).await;
+
             let mut building_map: HashMap<i64, String> = self
                 .select_building_all()
                 .await?
@@ -174,7 +180,7 @@ macro_rules! impl_teacher_query_variant {
                         })
                         .collect(),
                     group_list: group_map.remove(&c.id).unwrap_or_default(),
-                    teacher_name: vec![],
+                    teacher_name: teacher_map.remove(&c.id).unwrap_or_default(),
                 })
                 .collect();
             list.sort_unstable_by_key(|c| c.start_time);
@@ -211,6 +217,16 @@ macro_rules! impl_auditorium_query_variant {
 
             let mut teacher_map: HashMap<i64, Vec<TeacherShort>> =
                 self.select_teachers_with_class_list(&schedule_ids).await;
+
+            let mut auditoriums_map: HashMap<i64, Vec<Auditorium>> =
+                self.select_auditoriums_with_class_list(&schedule_ids).await;
+            let mut building_map: HashMap<i64, String> = self
+                .select_building_all()
+                .await?
+                .into_iter()
+                .map(|b| (b.id, b.name.to_string()))
+                .collect();
+
             let mut list: Vec<DtoClass> = data
                 .into_iter()
                 .map(|c| DtoClass {
@@ -220,7 +236,21 @@ macro_rules! impl_auditorium_query_variant {
                     lesson_type: c.lesson_type,
                     lesson_type_abbreviated: c.lesson_type_abbreviated,
                     discipline_name: c.discipline_name,
-                    auditorium_name: vec![],
+                    auditorium_name: auditoriums_map
+                        .remove(&c.id)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|a| AuditoriumShort {
+                            name: a.name,
+                            number: a.number,
+                            building_id: a.building_id,
+                            building_name: if let Some(bid) = a.building_id {
+                                building_map.get(&bid).map(<_>::to_owned)
+                            } else {
+                                None
+                            },
+                        })
+                        .collect(),
                     group_list: group_map.remove(&c.id).unwrap_or_default(),
                     teacher_name: teacher_map.remove(&c.id).unwrap_or_default(),
                 })
@@ -283,6 +313,23 @@ impl Database {
             }
         }
     }
+    pub async fn select_class_by_auditorium_with_timestamps(
+        &self,
+        auditorium: IdOrName,
+        start: NaiveDateTime,
+        end: NaiveDateTime,
+    ) -> Result<Vec<DtoClass>> {
+        match auditorium {
+            IdOrName::Id(id) => {
+                self.select_class_by_auditorium_id_with_timestamps(id, start, end)
+                    .await
+            }
+            IdOrName::Name(name) => {
+                self.select_class_by_auditorium_name_with_timestamps(name, start, end)
+                    .await
+            }
+        }
+    }
     impl_student_query_variant!(
         select_class_by_group_id_with_timestamps,
         i64,
@@ -307,6 +354,11 @@ impl Database {
         select_class_by_auditorium_id_with_timestamps,
         i64,
         "WHERE a.id = $1 AND start_time > $2 AND end_time < $3"
+    );
+    impl_auditorium_query_variant!(
+        select_class_by_auditorium_name_with_timestamps,
+        String,
+        "WHERE a.name = $1 AND start_time > $2 AND end_time < $3"
     );
     async fn select_auditoriums_with_class_list(
         &self,
@@ -363,12 +415,13 @@ impl Database {
     }
 
     async fn select_groups_with_class_list(&self, list: &[i64]) -> HashMap<i64, Vec<GroupShort>> {
-        let teachers: Vec<GroupShort> = sqlx::query_as(
+        dbg!(&list);
+        let groups: Vec<GroupShort> = sqlx::query_as(
             r#"
-            SELECT g.id, name, course
+            SELECT sg.schedule_id AS id, name, course
             FROM schedule_group sg
             INNER JOIN student_group g ON sg.group_id = g.id
-            WHERE sg.group_id = ANY($1)
+            WHERE sg.schedule_id = ANY($1)
             "#,
         )
         .bind(&list)
@@ -376,19 +429,21 @@ impl Database {
         .await
         .wrap_err("Failed to fetch groups for classes")
         .unwrap();
+        dbg!(&groups);
 
-        let mut teacher_map: HashMap<i64, Vec<GroupShort>> = HashMap::new();
-        for teacher in teachers {
-            teacher_map
-                .entry(teacher.id)
+        let mut group_map: HashMap<i64, Vec<GroupShort>> = HashMap::new();
+        for group in groups {
+            group_map
+                .entry(group.id)
                 .or_insert_with(Vec::new)
                 .push(GroupShort {
-                    id: teacher.id,
-                    name: teacher.name,
-                    course: teacher.course,
+                    id: group.id,
+                    name: group.name,
+                    course: group.course,
                 });
         }
-        teacher_map
+        dbg!(&group_map);
+        group_map
     }
     pub async fn select_class_by_teacher(
         &self,

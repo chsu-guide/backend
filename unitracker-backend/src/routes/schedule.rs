@@ -70,7 +70,7 @@ async fn get_teacher_schedule(
 
 #[derive(PartialEq, Eq, Deserialize, Debug)]
 struct AuditoriumScheduleQuery {
-    auditorium: i64,
+    auditorium: IdOrName,
     #[serde(with = "ts_seconds_option")]
     start: Option<NaiveDateTime>,
     #[serde(with = "ts_seconds_option")]
@@ -83,7 +83,7 @@ async fn get_auditorium_schedule(
 ) -> Result<Json<Vec<dtos::class::Class>>, StatusCode> {
     context
         .database()
-        .select_class_by_auditorium_id_with_timestamps(
+        .select_class_by_auditorium_with_timestamps(
             query.auditorium,
             query.start.unwrap_or(Utc::now().naive_local()),
             query.end.unwrap_or(Utc::now().naive_local()),
