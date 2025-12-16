@@ -4,13 +4,13 @@ use unitracker_psql::database::Database;
 #[derive(Debug)]
 pub struct Clients {
     psql: Database,
-    chsu: ChsuClient,
+    // chsu: ChsuClient,
 }
 
 impl Clients {
-    pub fn chsu(&self) -> &ChsuClient {
-        &self.chsu
-    }
+    // pub fn chsu(&self) -> &ChsuClient {
+    //     &self.chsu
+    // }
 
     pub fn psql(&self) -> &Database {
         &self.psql
@@ -30,13 +30,13 @@ impl Context {
         Self {
             clients: Clients {
                 psql: Database::new(&params.connection_string).unwrap(),
-                chsu: ChsuClient::new().await,
+                // chsu: ChsuClient::new().await,
             },
         }
     }
-    pub fn chsu(&self) -> &ChsuClient {
-        &self.clients.chsu()
-    }
+    // pub fn chsu(&self) -> &ChsuClient {
+    //     &self.clients.chsu()
+    // }
 
     pub fn database(&self) -> &Database {
         &self.clients.psql()

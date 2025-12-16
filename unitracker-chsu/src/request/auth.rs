@@ -20,7 +20,10 @@ pub async fn get_auth(client: &Client) -> Result<AuthResponse, AuthErrors> {
         StatusCode::OK => Ok(response.json().await?),
         StatusCode::BAD_REQUEST => Err(AuthErrors::EmptyRequestBody),
         StatusCode::UNAUTHORIZED => Err(AuthErrors::IncorrectAuthData),
-        _ => Err(AuthErrors::UnknownError),
+        e => {
+            println!("Error: {e}");
+            return Err(AuthErrors::UnknownError);
+        }
     };
     auth_response
 }

@@ -16,13 +16,15 @@ use unitracker_psql::database::Database;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    println!("Starting");
     tracing_subscriber::fmt::init();
     info!("Starting up");
     let client = ChsuClient::new().await;
     // let database_url = env!("DATABASE_URL");
     let database =
         Database::new("postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db").unwrap();
-    database.migrate().await?;
+    // database.migrate().await?;
+    println!("Initialized db");
     fill_buildings(&database, &client).await;
     fill_teachers(&database, &client).await;
     fill_auditoriums(&database, &client).await;
