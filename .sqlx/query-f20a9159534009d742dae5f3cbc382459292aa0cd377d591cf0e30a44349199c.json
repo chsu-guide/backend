@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO discipline\n            (name)\n            SELECT * FROM UNNEST($1::TEXT[])\n            ON CONFLICT (name) DO NOTHING;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f20a9159534009d742dae5f3cbc382459292aa0cd377d591cf0e30a44349199c"
+}

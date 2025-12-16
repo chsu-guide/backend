@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO building\n            (name)\n            VALUES ($1)\n            ON CONFLICT (name)\n                DO UPDATE SET\n                name = EXCLUDED.name\n            RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fbaf3bfc9bbc651288e5ce7087d905cc2d37e30ccb8ed28fbaa568892f4b974d"
+}

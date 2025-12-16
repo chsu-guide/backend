@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO discipline\n            (name)\n            VALUES ($1)\n            ON CONFLICT (name) DO\n            NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "abd4ba4eccd2077d2da85a35e2d8624160188c6167a3953771502c96db75536f"
+}

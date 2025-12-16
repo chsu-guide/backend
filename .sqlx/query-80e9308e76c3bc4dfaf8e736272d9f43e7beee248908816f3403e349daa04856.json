@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO schedule\n            (id, request_date, start_time, end_time, lesson_type, lesson_type_abbr, discipline_id)\n            SELECT * FROM UNNEST($1::bigint[], $2::timestamp[], $3::timestamp[], $4::timestamp[], $5::text[], $6::text[], $7::bigint[])\n            ON CONFLICT (id) DO\n            NOTHING\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "TimestampArray",
+        "TimestampArray",
+        "TimestampArray",
+        "TextArray",
+        "TextArray",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "80e9308e76c3bc4dfaf8e736272d9f43e7beee248908816f3403e349daa04856"
+}

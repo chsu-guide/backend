@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, name, course, faculty_id, chair_id\n            FROM student_group\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "course",
+        "type_info": "Int2"
+      },
+      {
+        "ordinal": 3,
+        "name": "faculty_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "chair_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "54b7adfe6d911bdc18fdc911f7d003f8bc5e4ec3b6e405659b1e0cc4d59556f3"
+}

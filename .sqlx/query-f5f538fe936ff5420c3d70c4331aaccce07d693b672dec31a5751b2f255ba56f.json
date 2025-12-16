@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT schedule.id, request_date AS created_at, start_time, end_time, lesson_type, lesson_type_abbr AS lesson_type_abbreviated, discipline_id\n            FROM schedule\n            INNER JOIN discipline ON schedule.discipline_id = discipline.id\n            JOIN schedule_group sg ON schedule.id = sg.schedule_id\n            JOIN student_group g ON sg.group_id = g.id\n            WHERE g.name = $1 AND discipline.name = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 2,
+        "name": "start_time",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 3,
+        "name": "end_time",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 4,
+        "name": "lesson_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "lesson_type_abbreviated",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "discipline_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "f5f538fe936ff5420c3d70c4331aaccce07d693b672dec31a5751b2f255ba56f"
+}

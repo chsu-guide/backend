@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO auditorium\n            (id, name, number, building_id)\n            VALUES ($1, $2, $3, $4)\n            ON CONFLICT (id) DO UPDATE\n            SET\n                name = $2,\n                number = $3,\n                building_id = $4\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0365a2384ed37be4ec40624800ba2d0cb7f00578ccbb5b222d7d3117e840e50c"
+}
