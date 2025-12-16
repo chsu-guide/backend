@@ -50,7 +50,7 @@ async fn main() -> eyre::Result<()> {
 
     let app = Router::new().nest("/api", app).with_state(Arc::new(
         Context::init(ContextParameters {
-            connection_string: "postgres://unitracker:unitracker@127.0.0.1:3535/unitracker-db"
+            connection_string: "postgres://unitracker:unitracker@unitracker-db:3535/unitracker-db"
                 .to_string(),
         })
         .await,
