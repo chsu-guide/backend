@@ -48,10 +48,12 @@ async fn main() -> eyre::Result<()> {
         .merge(metadata::metadata_router())
         .layer(create_trace_layer());
 
+    let connection_string = std::env::var("DATABASE_URL").unwrap();
     let app = Router::new().nest("/api", app).with_state(Arc::new(
         Context::init(ContextParameters {
-            connection_string: "postgres://unitracker:unitracker@unitracker-db:3535/unitracker-db"
-                .to_string(),
+            connection_string,
+            // connection_string: "postgres://unitracker:unitracker@unitracker-db:3535/unitracker-db"
+            //     .to_string(),
         })
         .await,
     ));
